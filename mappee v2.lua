@@ -674,6 +674,7 @@ local Settings = {
     TouchFlingEnabled = false,
     AntiFlingEnabled = false,
     InstantInteractEnabled = false,
+    AntiAFKEnabled = false,
     FlyEnabled = false,
     FlySpeed = 1,
     OriginalValuesSaved = false,
@@ -762,14 +763,18 @@ end
 local function ServerHop()
     local PlaceId = game.PlaceId
     local function GetServer()
-        local raw = game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
+        local raw = game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
         local decoded = HttpService:JSONDecode(raw)
         
         if decoded.data then
+            local servers = {}
             for _, server in pairs(decoded.data) do
-                if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                    return server.id
+                if type(server) == "table" and server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    table.insert(servers, server.id)
                 end
+            end
+            if #servers > 0 then
+                return servers[math.random(1, #servers)]
             end
         end
         return nil
@@ -779,11 +784,25 @@ local function ServerHop()
     if ServerId then
         TeleportService:TeleportToPlaceInstance(PlaceId, ServerId, LocalPlayer)
     else
-         game:GetService("StarterGui"):SetCore("SendNotification", {
+        game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Server Hop",
-            Text = "No suitable server found, try again later.",
+            Text = "No suitable server found, trying again...",
             Duration = 5
         })
+        task.wait(1)
+        ServerHop()
+    end
+end
+local function ToggleAntiAFK(state)
+    Settings.AntiAFKEnabled = state
+    if state then
+        local virtualUser = game:GetService("VirtualUser")
+        LocalPlayer.Idled:Connect(function()
+            if Settings.AntiAFKEnabled then
+                virtualUser:CaptureController()
+                virtualUser:ClickButton2(Vector2.new())
+            end
+        end)
     end
 end
 local function ToggleFling(state)
@@ -1168,7 +1187,7 @@ local function SpectatePlayer(targetName)
     end
 end
 local Window = Library:CreateWindow({
-    Name = "🎄 Diablo Hub Merry Christmas"
+    Name = "🎄 Diablo Christmas Hub"
 })
 Window:Section("Main Features")
 Window:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
@@ -1191,6 +1210,9 @@ end)
 Window:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
     Settings.InfiniteJumpEnabled = state
     SetupInfiniteJump()
+end)
+Window:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
+    ToggleAntiAFK(state)
 end)
 Window:Section("Movement")
 Window:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
@@ -1232,8 +1254,8 @@ end)
 task.spawn(function()
     if game:GetService("StarterGui") then
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "มึงจะรันโปรกูหาพ่อมึงหรอ",
-            Text = "เล่นโปรทำไมไอ่ไก่",
+            Title = "Welcome",
+            Text = "Diablo Script (Clean) Loaded!",
             Duration = 5
         })
     end
