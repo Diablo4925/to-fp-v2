@@ -1187,7 +1187,7 @@ local function SpectatePlayer(targetName)
     end
 end
 local Window = Library:CreateWindow({
-    Name = "🎄 Diablo Christmas Hub"
+    Name = "🎄 Diablo Hub Merry Christmas"
 })
 Window:Section("Main Features")
 Window:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
@@ -1255,7 +1255,7 @@ task.spawn(function()
     if game:GetService("StarterGui") then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Welcome",
-            Text = "Diablo Script (Clean) Loaded!",
+            Text = "Diablo Script Loaded!",
             Duration = 5
         })
     end
