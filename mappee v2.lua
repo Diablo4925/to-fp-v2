@@ -815,23 +815,32 @@ local function ToggleFly(state)
             while Settings.FlyEnabled and character and humanoid.Health > 0 do
                 RunService.RenderStepped:Wait()
                 humanoid.PlatformStand = true
-                bg.CFrame = workspace.CurrentCamera.CFrame
+                local camera = workspace.CurrentCamera
+                bg.CFrame = camera.CFrame
                 
-                local moveDir = Vector3.new()
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                    moveDir = moveDir + workspace.CurrentCamera.CFrame.LookVector
+                local moveDirection = humanoid.MoveDirection
+                local verticalDir = 0
+                
+                -- Up Movement (Space for PC, Jump button for Mobile)
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) or humanoid.Jump then
+                    verticalDir = 1
                 end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                    moveDir = moveDir - workspace.CurrentCamera.CFrame.LookVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                    moveDir = moveDir - workspace.CurrentCamera.CFrame.RightVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                    moveDir = moveDir + workspace.CurrentCamera.CFrame.RightVector
+                -- Down Movement (Ctrl for PC)
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                    verticalDir = -1
                 end
                 
-                bv.Velocity = moveDir * (Settings.FlySpeed * 50)
+                local velocity = Vector3.new(0, 0, 0)
+                if moveDirection.Magnitude > 0 then
+                    -- Convert horizontal world direction to camera-relative movement
+                    -- This allows Camera-Direction Fly for both PC & Mobile
+                    local relMove = camera.CFrame:VectorToObjectSpace(moveDirection)
+                    local flyDir = (camera.CFrame.LookVector * -relMove.Z) + (camera.CFrame.RightVector * relMove.X)
+                    velocity = flyDir.Unit * (Settings.FlySpeed * 50)
+                end
+                
+                -- Combine with manual vertical override
+                bv.Velocity = velocity + (Vector3.new(0, verticalDir, 0) * (Settings.FlySpeed * 50))
             end
             if bg then bg:Destroy() end
             if bv then bv:Destroy() end
