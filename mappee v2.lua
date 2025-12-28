@@ -416,11 +416,8 @@ function Library:CreateWindow(Settings)
         local DotCorner = Instance.new("UICorner")
         DotCorner.CornerRadius = UDim.new(1, 0)
         DotCorner.Parent = Dot
-        ToggleFrame.MouseButton1Click:Connect(function()
-            CreateRipple(ToggleFrame)
-            Toggled = not Toggled
-            
-            -- UI Update (Immediate)
+        local function UpdateUI(State, IgnoreCallback)
+            Toggled = State
             if Toggled then
                 TweenService:Create(Switch, TweenInfo.new(0.3), {BackgroundColor3 = Config.Colors.Accent}):Play()
                 TweenService:Create(Dot, TweenInfo.new(0.3), {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
@@ -428,11 +425,21 @@ function Library:CreateWindow(Settings)
                 TweenService:Create(Switch, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
                 TweenService:Create(Dot, TweenInfo.new(0.3), {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
             end
-            -- Callback (Async)
-            task.spawn(function()
-                Callback(Toggled)
-            end)
+            if not IgnoreCallback then
+                task.spawn(function()
+                    Callback(Toggled)
+                end)
+            end
+        end
+        ToggleFrame.MouseButton1Click:Connect(function()
+            CreateRipple(ToggleFrame)
+            UpdateUI(not Toggled)
         end)
+        return {
+            Set = function(State)
+                UpdateUI(State, true)
+            end
+        }
     end
     function Elements:Slider(Text, Min, Max, Default, Callback)
         local Value = Default or Min
@@ -662,6 +669,91 @@ function Library:CreateWindow(Settings)
             Callback(Value)
         end)
     end
+    function Elements:Dropdown(Text, Options, Callback)
+        local Options = Options or {}
+        local Callback = Callback or function() end
+        local Toggled = false
+        local Selected = "None"
+        local DropdownFrame = Instance.new("Frame")
+        DropdownFrame.Name = "Dropdown"
+        DropdownFrame.Parent = Container
+        DropdownFrame.BackgroundColor3 = Config.Colors.Secondary
+        DropdownFrame.ClipsDescendants = true
+        DropdownFrame.Size = UDim2.new(1, 0, 0, 40)
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(0, 8)
+        Corner.Parent = DropdownFrame
+        local MainButton = Instance.new("TextButton")
+        MainButton.Parent = DropdownFrame
+        MainButton.BackgroundTransparency = 1
+        MainButton.Size = UDim2.new(1, 0, 0, 40)
+        MainButton.Font = Config.FontRegular
+        MainButton.Text = "  " .. Text .. ": " .. Selected
+        MainButton.TextColor3 = Config.Colors.Text
+        MainButton.TextSize = 14
+        MainButton.TextXAlignment = Enum.TextXAlignment.Left
+        local Arrow = Instance.new("ImageLabel")
+        Arrow.Parent = MainButton
+        Arrow.AnchorPoint = Vector2.new(1, 0.5)
+        Arrow.BackgroundTransparency = 1
+        Arrow.Position = UDim2.new(1, -12, 0.5, 0)
+        Arrow.Size = UDim2.new(0, 16, 0, 16)
+        Arrow.Image = "rbxassetid://6034818372"
+        Arrow.ImageColor3 = Config.Colors.TextDark
+        local OptionsContainer = Instance.new("Frame")
+        OptionsContainer.Parent = DropdownFrame
+        OptionsContainer.BackgroundTransparency = 1
+        OptionsContainer.Position = UDim2.new(0, 0, 0, 40)
+        OptionsContainer.Size = UDim2.new(1, 0, 0, 0)
+        local UIListLayout = Instance.new("UIListLayout")
+        UIListLayout.Parent = OptionsContainer
+        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        local function RefreshOptions(newOptions)
+            for _, v in pairs(OptionsContainer:GetChildren()) do
+                if v:IsA("TextButton") then v:Destroy() end
+            end
+            for _, opt in pairs(newOptions) do
+                local optBtn = Instance.new("TextButton")
+                optBtn.Parent = OptionsContainer
+                optBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+                optBtn.BorderSizePixel = 0
+                optBtn.Size = UDim2.new(1, 0, 0, 30)
+                optBtn.Font = Config.FontRegular
+                optBtn.Text = tostring(opt)
+                optBtn.TextColor3 = Config.Colors.TextDark
+                optBtn.TextSize = 13
+                
+                optBtn.MouseButton1Click:Connect(function()
+                    Selected = opt
+                    MainButton.Text = "  " .. Text .. ": " .. Selected
+                    Toggled = false
+                    TweenService:Create(DropdownFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 40)}):Play()
+                    TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = 0}):Play()
+                    Callback(Selected)
+                end)
+            end
+        end
+        RefreshOptions(Options)
+        MainButton.MouseButton1Click:Connect(function()
+            Toggled = not Toggled
+            local TargetSize = Toggled and UDim2.new(1, 0, 0, 40 + (#OptionsContainer:GetChildren() - 1) * 30) or UDim2.new(1, 0, 0, 40)
+            if Toggled and Text:find("Player") then -- Dynamic refresh for Player dropdowns
+                local names = {}
+                for _, p in pairs(Players:GetPlayers()) do table.insert(names, p.Name) end
+                RefreshOptions(names)
+                TargetSize = UDim2.new(1, 0, 0, 40 + (#names) * 30)
+            end
+            TweenService:Create(DropdownFrame, TweenInfo.new(0.3), {Size = TargetSize}):Play()
+            TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = Toggled and 180 or 0}):Play()
+        end)
+        return {
+            SetOptions = RefreshOptions,
+            Set = function(val)
+                Selected = val
+                MainButton.Text = "  " .. Text .. ": " .. Selected
+            end
+        }
+    end
     return Elements
 end
 local Settings = {
@@ -677,6 +769,13 @@ local Settings = {
     AntiAFKEnabled = false,
     FlyEnabled = false,
     FlySpeed = 1,
+    AntiTouchEnabled = false,
+    AntiScreenShakeEnabled = false,
+    ClickToFlingEnabled = false,
+    ZoomUnlockerEnabled = false,
+    MaxZoomDistance = 500,
+    ZoomUnlockerEnabled = false,
+    MaxZoomDistance = 500,
     OriginalValuesSaved = false,
     OriginalAmbient = nil,
     OriginalBrightness = nil,
@@ -691,6 +790,9 @@ local espConnections = {}
 local TPWalkConnection = nil
 local NoClipConnection = nil
 local InfiniteJumpConnection = nil
+local FolderName = "Diablo Script"
+local ConfigName = "config.json"
+local UIElements = {}
 local function ToggleFly(state)
     Settings.FlyEnabled = state
     
@@ -792,6 +894,77 @@ local function ServerHop()
         task.wait(1)
         ServerHop()
     end
+end
+local function FindSmallServer()
+    local PlaceId = game.PlaceId
+    
+    local function getServers(cursor)
+        local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        if cursor then
+            url = url .. "&cursor=" .. cursor
+        end
+        
+        local success, result = pcall(function()
+            return game:HttpGet(url)
+        end)
+        
+        if success then
+            local successDecode, decoded = pcall(function() return HttpService:JSONDecode(result) end)
+            if successDecode then
+                return decoded
+            end
+        end
+        return nil
+    end
+    
+    task.spawn(function()
+        local cursor = nil
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Diablo Discovery",
+            Text = "Searching for small server...",
+            Duration = 3
+        })
+        
+        -- Try up to 10 pages for better chance
+        for i = 1, 10 do
+            local data = getServers(cursor)
+            if data and data.data then
+                local bestServer = nil
+                local minPlayers = Players.MaxPlayers
+                
+                for _, server in pairs(data.data) do
+                    if server.playing and server.playing > 0 and server.playing < Players.MaxPlayers and server.id ~= game.JobId then
+                        if server.playing <= 2 then
+                            TeleportService:TeleportToPlaceInstance(PlaceId, server.id, LocalPlayer)
+                            return
+                        end
+                        if server.playing < minPlayers then
+                            minPlayers = server.playing
+                            bestServer = server.id
+                        end
+                    end
+                end
+                
+                cursor = data.nextPageCursor
+                if not cursor then 
+                    if bestServer then
+                        TeleportService:TeleportToPlaceInstance(PlaceId, bestServer, LocalPlayer)
+                        return
+                    end
+                    break 
+                end
+            else
+                break
+            end
+            task.wait(0.1)
+        end
+        
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Diablo Discovery",
+            Text = "No small server found. Try again!",
+            Duration = 3
+        })
+    end)
 end
 local function ToggleAntiAFK(state)
     Settings.AntiAFKEnabled = state
@@ -908,6 +1081,121 @@ local function ToggleInstantInteract(state)
             end
         end
         OriginalPrompts = {} -- Clear cache
+    end
+end
+local ClickToFlingConnection = nil
+local function ToggleClickToFling(state)
+    Settings.ClickToFlingEnabled = state
+    
+    if state then
+        if ClickToFlingConnection then ClickToFlingConnection:Disconnect() end
+        ClickToFlingConnection = UserInputService.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 and Settings.ClickToFlingEnabled then
+                local mousePos = UserInputService:GetMouseLocation()
+                local ray = workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
+                local hitPart = workspace:FindPartOnRayWithIgnoreList(Ray.new(ray.Origin, ray.Direction * 1000), {LocalPlayer.Character})
+                
+                if hitPart and hitPart.Parent then
+                    local targetPlayer = Players:GetPlayerFromCharacter(hitPart.Parent) or Players:GetPlayerFromCharacter(hitPart.Parent.Parent)
+                    
+                    if targetPlayer and targetPlayer ~= LocalPlayer and targetPlayer.Character then
+                        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        
+                        if hrp and targetHRP then
+                            local oldCF = hrp.CFrame
+                            
+                            -- Extreme Fling Physics
+                            hrp.CFrame = targetHRP.CFrame
+                            hrp.Velocity = Vector3.new(9999999, 9999999, 9999999)
+                            
+                            task.wait(0.1)
+                            
+                            hrp.CFrame = oldCF
+                            hrp.Velocity = Vector3.new(0, 0, 0)
+                            hrp.RotVelocity = Vector3.new(0, 0, 0)
+                        end
+                    end
+                end
+            end
+        end)
+    else
+        if ClickToFlingConnection then
+            ClickToFlingConnection:Disconnect()
+            ClickToFlingConnection = nil
+        end
+    end
+end
+local function ToggleAntiTouch(state)
+    Settings.AntiTouchEnabled = state
+    if state then
+        task.spawn(function()
+            local function checkPart(part)
+                if part:IsA("BasePart") then
+                    local isKillPart = false
+                    local name = part.Name:lower()
+                    
+                    local keywords = {"lava", "kill", "deadly", "death", "spike", "hurt", "damag", "trap", "void", "laser", "saw", "blade", "spin", "beam", "plasma", "toxic", "acid", "poison"}
+                    for _, kw in pairs(keywords) do
+                        if name:find(kw) then
+                            isKillPart = true
+                            break
+                        end
+                    end
+                    
+                    if not isKillPart and part.Material == Enum.Material.Neon then
+                        local r, g, b = part.Color.R, part.Color.G, part.Color.B
+                        if (r > 0.7 and g < 0.4 and b < 0.4) or (r > 0.7 and g > 0.4 and b < 0.2) then
+                            isKillPart = true
+                        end
+                    end
+                    
+                    if isKillPart then
+                        part.CanTouch = false
+                        for _, child in pairs(part:GetChildren()) do
+                            if child:IsA("TouchTransmitter") then
+                                child:Destroy()
+                            end
+                        end
+                        
+                        -- Prevent recreation
+                        if not part:FindFirstChild("AntiTouchWatcher") then
+                            local watcher = Instance.new("BoolValue")
+                            watcher.Name = "AntiTouchWatcher"
+                            watcher.Parent = part
+                            part.ChildAdded:Connect(function(child)
+                                if Settings.AntiTouchEnabled and child:IsA("TouchTransmitter") then
+                                    task.wait()
+                                    child:Destroy()
+                                end
+                            end)
+                        end
+                    end
+                end
+            end
+            for _, v in pairs(workspace:GetDescendants()) do
+                checkPart(v)
+            end
+            local connection
+            connection = workspace.DescendantAdded:Connect(function(v)
+                if not Settings.AntiTouchEnabled then
+                    connection:Disconnect()
+                    return
+                end
+                checkPart(v)
+            end)
+            while Settings.AntiTouchEnabled do
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and v:FindFirstChild("AntiTouchWatcher") then
+                        v.CanTouch = false
+                    else
+                        checkPart(v)
+                    end
+                end
+                task.wait(3)
+            end
+        end)
     end
 end
 local function createESP(player)
@@ -1148,6 +1436,23 @@ local function SetupNoClip()
         end
     end
 end
+local AntiScreenShakeConnection = nil
+local function ToggleAntiScreenShake(state)
+    Settings.AntiScreenShakeEnabled = state
+    if state then
+        if AntiScreenShakeConnection then AntiScreenShakeConnection:Disconnect() end
+        AntiScreenShakeConnection = RunService.RenderStepped:Connect(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.CameraOffset = Vector3.new(0, 0, 0)
+            end
+        end)
+    else
+        if AntiScreenShakeConnection then
+            AntiScreenShakeConnection:Disconnect()
+            AntiScreenShakeConnection = nil
+        end
+    end
+end
 local function SetupInfiniteJump()
     if Settings.InfiniteJumpEnabled then
         if InfiniteJumpConnection then InfiniteJumpConnection:Disconnect() end
@@ -1164,6 +1469,12 @@ local function SetupInfiniteJump()
     end
 end
 local function SpectatePlayer(targetName)
+    if not targetName or targetName == "None" then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
+        end
+        return
+    end
     local target = nil
     for _, v in pairs(Players:GetPlayers()) do
         if v.Name:lower():sub(1, #targetName) == targetName:lower() then
@@ -1182,54 +1493,128 @@ local function SpectatePlayer(targetName)
                 Duration = 3
             })
         end
-    else
-        workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
     end
 end
+local function ToggleZoomUnlocker(state)
+    Settings.ZoomUnlockerEnabled = state
+    if state then
+        LocalPlayer.CameraMaxZoomDistance = Settings.MaxZoomDistance
+    else
+        LocalPlayer.CameraMaxZoomDistance = 128
+    end
+end
+local function SaveConfig()
+    if not isfolder(FolderName) then
+        makefolder(FolderName)
+    end
+    
+    local ConfigData = {}
+    local SaveableKeys = {
+        "FullbrightEnabled", "TPWalkEnabled", "TPWalkSpeed", 
+        "NoClipEnabled", "InfiniteJumpEnabled", "ESPEnabled", 
+        "TouchFlingEnabled", "AntiFlingEnabled", "InstantInteractEnabled", "ClickToFlingEnabled",
+        "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled"
+    }
+    
+    for _, key in pairs(SaveableKeys) do
+        ConfigData[key] = Settings[key]
+    end
+    
+    writefile(FolderName .. "/" .. ConfigName, HttpService:JSONEncode(ConfigData))
+    
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Diablo Script",
+        Text = "Config Saved successfully! 💾",
+        Duration = 3
+    })
+end
+local function LoadConfig()
+    if isfile(FolderName .. "/" .. ConfigName) then
+        local raw = readfile(FolderName .. "/" .. ConfigName)
+        local success, decoded = pcall(function() return HttpService:JSONDecode(raw) end)
+        
+        if success and type(decoded) == "table" then
+            for key, value in pairs(decoded) do
+                Settings[key] = value
+            end
+            -- Sync UI after loading
+            for key, element in pairs(UIElements) do
+                if Settings[key] ~= nil then
+                    element.Set(Settings[key])
+                end
+            end
+            -- Activate Logic
+            task.spawn(function()
+                SetFullbright(Settings.FullbrightEnabled)
+                SetupNoClip()
+                SetupInfiniteJump()
+                ToggleAntiAFK(Settings.AntiAFKEnabled)
+                SetupTPWalk()
+                if Settings.ESPEnabled then enableESP() else disableESP() end
+                ToggleFly(Settings.FlyEnabled)
+                ToggleFling(Settings.TouchFlingEnabled)
+                ToggleAntiFling(Settings.AntiFlingEnabled)
+                ToggleInstantInteract(Settings.InstantInteractEnabled)
+                ToggleZoomUnlocker(Settings.ZoomUnlockerEnabled)
+                if Settings.AntiTouchEnabled then ToggleAntiTouch(true) end
+                ToggleAntiScreenShake(Settings.AntiScreenShakeEnabled)
+                ToggleClickToFling(Settings.ClickToFlingEnabled)
+            end)
+            return true
+        end
+    end
+    return false
+end
 local Window = Library:CreateWindow({
-    Name = "🎄 Diablo Hub Merry Christmas"
+    Name = "Diablo Hub Merry Christmas"
 })
-Window:Section("Main Features")
+Window:Section("Fling Control 🌪️")
 Window:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
     ToggleFling(state)
 end)
-Window:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
+UIElements.AntiFlingEnabled = Window:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
     ToggleAntiFling(state)
 end)
-Window:Toggle("Instant Interact 👆", Settings.InstantInteractEnabled, function(state)
+UIElements.ClickToFlingEnabled = Window:Toggle("Click-to-Fling 🎯", Settings.ClickToFlingEnabled, function(state)
+    ToggleClickToFling(state)
+end)
+Window:Section("Main Features")
+UIElements.InstantInteractEnabled = Window:Toggle("Instant Interact 👆", Settings.InstantInteractEnabled, function(state)
     ToggleInstantInteract(state)
 end)
-Window:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
-    Settings.FullbrightEnabled = state
+UIElements.FullbrightEnabled = Window:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
     SetFullbright(state)
 end)
-Window:Toggle("NoClip 👻", Settings.NoClipEnabled, function(state)
+UIElements.NoClipEnabled = Window:Toggle("NoClip 👻", Settings.NoClipEnabled, function(state)
     Settings.NoClipEnabled = state
     SetupNoClip()
 end)
-Window:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
+UIElements.InfiniteJumpEnabled = Window:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
     Settings.InfiniteJumpEnabled = state
     SetupInfiniteJump()
 end)
-Window:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
+UIElements.AntiAFKEnabled = Window:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
     ToggleAntiAFK(state)
 end)
+UIElements.AntiTouchEnabled = Window:Toggle("Anti-Touch 🚫", Settings.AntiTouchEnabled, function(state)
+    ToggleAntiTouch(state)
+end)
 Window:Section("Movement")
-Window:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
+UIElements.FlyEnabled = Window:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
     ToggleFly(state)
 end)
-Window:NumberInput("Fly Speed 🚀", 1, function(value)
+UIElements.FlySpeed = Window:NumberInput("Fly Speed 🚀", 1, function(value)
     Settings.FlySpeed = value
 end)
-Window:Toggle("TP Walk ⚡", Settings.TPWalkEnabled, function(state)
+UIElements.TPWalkEnabled = Window:Toggle("TP Walk ⚡", Settings.TPWalkEnabled, function(state)
     Settings.TPWalkEnabled = state
     SetupTPWalk()
 end)
-Window:NumberInput("TP Speed 🎯", 1, function(value)
+UIElements.TPWalkSpeed = Window:NumberInput("TP Speed 🎯", 1, function(value)
     Settings.TPWalkSpeed = value
 end)
 Window:Section("Visuals")
-Window:Toggle("ESP 👁️", Settings.ESPEnabled, function(state)
+UIElements.ESPEnabled = Window:Toggle("ESP 👁️", Settings.ESPEnabled, function(state)
     Settings.ESPEnabled = state
     if state then
         enableESP()
@@ -1237,11 +1622,32 @@ Window:Toggle("ESP 👁️", Settings.ESPEnabled, function(state)
         disableESP()
     end
 end)
-Window:TextInput("Spectate Player 📹", "Player Name...", function(text)
-    if text == "" then
-        workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
-    else
-        SpectatePlayer(text)
+Window:Dropdown("Spectate Player 📹", {}, function(selected)
+    SpectatePlayer(selected)
+end)
+Window:Button("Reset Camera 🎥", function()
+    SpectatePlayer("None")
+end)
+UIElements.AntiScreenShakeEnabled = Window:Toggle("Anti-Screen Shake 📸", Settings.AntiScreenShakeEnabled, function(state)
+    ToggleAntiScreenShake(state)
+end)
+UIElements.ZoomUnlockerEnabled = Window:Toggle("Zoom Unlocker 🔭", Settings.ZoomUnlockerEnabled, function(state)
+    ToggleZoomUnlocker(state)
+end)
+UIElements.MaxZoomDistance = Window:NumberInput("Max Zoom Distance", Settings.MaxZoomDistance, function(value)
+    Settings.MaxZoomDistance = value
+    if Settings.ZoomUnlockerEnabled then
+        ToggleZoomUnlocker(true)
+    end
+end)
+Window:Section("Teleport")
+Window:Dropdown("Select Player 📍", {}, function(selected)
+    local target = Players:FindFirstChild(selected)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        end
     end
 end)
 Window:Section("Server & Utility")
@@ -1251,11 +1657,32 @@ end)
 Window:Button("Server Hop 🌎", function()
     ServerHop()
 end)
+Window:Button("Find Small Server 🕵️", function()
+    FindSmallServer()
+end)
+Window:Button("Save Config 💾", function()
+    SaveConfig()
+end)
+Window:Button("Load Config 📂", function()
+    LoadConfig()
+end)
+-- Auto Load
 task.spawn(function()
-    if game:GetService("StarterGui") then
+    if not LocalPlayer.Character then
+        LocalPlayer.CharacterAdded:Wait()
+    end
+    task.wait(1)
+    
+    if LoadConfig() then
         game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Welcome",
-            Text = "Diablo Script Loaded!",
+            Title = "Diablo Script",
+            Text = "Settings Auto-Loaded! ⚡",
+            Duration = 5
+        })
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Diablo Script",
+            Text = "Welcome! (No Config Found)",
             Duration = 5
         })
     end
