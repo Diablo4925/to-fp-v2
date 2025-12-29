@@ -68,17 +68,14 @@ local function CreateRipple(Button)
         local ButtonAbsolutePosition = Button.AbsolutePosition
         local ButtonAbsoluteSize = Button.AbsoluteSize
         local CirclePosition = Vector2.new(MouseLocation.X - ButtonAbsolutePosition.X, MouseLocation.Y - ButtonAbsolutePosition.Y - 36)
-        
         Ripple.Position = UDim2.new(0, CirclePosition.X, 0, CirclePosition.Y)
         Ripple.Size = UDim2.new(0, 0, 0, 0)
         local Size = math.max(ButtonAbsoluteSize.X, ButtonAbsoluteSize.Y) * 1.5
-        
         local Tween = TweenService:Create(Ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = UDim2.new(0, CirclePosition.X - Size/2, 0, CirclePosition.Y - Size/2),
             Size = UDim2.new(0, Size, 0, Size),
             ImageTransparency = 1
         })
-        
         Tween:Play()
         Tween.Completed:Wait()
         Ripple:Destroy()
@@ -138,7 +135,6 @@ function Library:CreateWindow(Settings)
             Snow.Size = UDim2.new(0, math.random(2,5), 0, math.random(2,5))
             Snow.Position = UDim2.new(math.random(0,100)/100, 0, -0.1, 0)
             Snow.BackgroundTransparency = math.random(30,80)/100
-            
             local Corner = Instance.new("UICorner")
             Corner.CornerRadius = UDim.new(1,0)
             Corner.Parent = Snow
@@ -149,7 +145,6 @@ function Library:CreateWindow(Settings)
                 BackgroundTransparency = 1
             })
             Tween:Play()
-            
             game:GetService("Debris"):AddItem(Snow, FallSpeed)
             task.wait(math.random(1,5)/10)
         end
@@ -223,17 +218,14 @@ function Library:CreateWindow(Settings)
     MinimizedIcon.Image = "rbxassetid://6421296789"
     MinimizedIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
     MinimizedIcon.ZIndex = 100
-    
     local IconCorner = Instance.new("UICorner")
     IconCorner.CornerRadius = UDim.new(1, 0)
     IconCorner.Parent = MinimizedIcon
-    
     local IconStroke = Instance.new("UIStroke")
     IconStroke.Parent = MinimizedIcon
     IconStroke.Color = Config.Colors.Accent
     IconStroke.Thickness = 2
     IconStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    
     local IconGlow = Instance.new("ImageLabel")
     IconGlow.Name = "Glow"
     IconGlow.Parent = MinimizedIcon
@@ -261,25 +253,21 @@ function Library:CreateWindow(Settings)
     end)
     local function ToggleMinimize()
         Minimized = not Minimized
-        
         if Minimized then
             OldPosition = Main.Position
             TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = MinimizedIcon.Position}):Play()
             task.wait(0.4)
             Main.Visible = false
-            
             MinimizedIcon.Visible = true
             TweenService:Create(MinimizedIcon, TweenInfo.new(0.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Size = UDim2.new(0, 60, 0, 60)}):Play()
         else
             local tween = TweenService:Create(MinimizedIcon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
             tween:Play()
-            
             task.delay(0.3, function()
                 if not Minimized then
                     MinimizedIcon.Visible = false
                 end
             end)
-            
             Main.Visible = true
             Main.Position = MinimizedIcon.Position
             TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 600, 0, 400), Position = OldPosition}):Play()
@@ -304,7 +292,6 @@ function Library:CreateWindow(Settings)
     Container.ScrollBarImageColor3 = Config.Colors.Accent
     Container.AutomaticCanvasSize = Enum.AutomaticSize.Y
     Container.CanvasSize = UDim2.new(0, 0, 0, 0)
-    
     local UIListLayout = Instance.new("UIListLayout")
     UIListLayout.Parent = Container
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -327,7 +314,6 @@ function Library:CreateWindow(Settings)
         SectionTitle.TextColor3 = Config.Colors.Accent
         SectionTitle.TextSize = 16.000
         SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
-        
         local Divider = Instance.new("Frame")
         Divider.Name = "Divider"
         Divider.Parent = SectionTitle
@@ -338,7 +324,6 @@ function Library:CreateWindow(Settings)
     end
     function Elements:Button(Text, Callback)
         local Callback = Callback or function() end
-        
         local Button = Instance.new("TextButton")
         Button.Name = "Button"
         Button.Parent = Container
@@ -352,7 +337,6 @@ function Library:CreateWindow(Settings)
         local BtnCorner = Instance.new("UICorner")
         BtnCorner.CornerRadius = UDim.new(0, 8)
         BtnCorner.Parent = Button
-        
         local BtnStroke = Instance.new("UIStroke")
         BtnStroke.Parent = Button
         BtnStroke.Color = Config.Colors.Accent
@@ -375,7 +359,6 @@ function Library:CreateWindow(Settings)
     function Elements:Toggle(Text, Default, Callback)
         local Callback = Callback or function() end
         local Toggled = Default or false
-        
         local ToggleFrame = Instance.new("TextButton")
         ToggleFrame.Name = "Toggle"
         ToggleFrame.Parent = Container
@@ -386,7 +369,6 @@ function Library:CreateWindow(Settings)
         local Corner = Instance.new("UICorner")
         Corner.CornerRadius = UDim.new(0, 8)
         Corner.Parent = ToggleFrame
-        
         local Title = Instance.new("TextLabel")
         Title.Parent = ToggleFrame
         Title.BackgroundTransparency = 1.000
@@ -402,17 +384,14 @@ function Library:CreateWindow(Settings)
         Switch.BackgroundColor3 = Toggled and Config.Colors.Accent or Color3.fromRGB(60, 60, 60)
         Switch.Position = UDim2.new(1, -50, 0.5, -10)
         Switch.Size = UDim2.new(0, 40, 0, 20)
-        
         local SwitchCorner = Instance.new("UICorner")
         SwitchCorner.CornerRadius = UDim.new(1, 0)
         SwitchCorner.Parent = Switch
-        
         local Dot = Instance.new("Frame")
         Dot.Parent = Switch
         Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         Dot.Position = Toggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
         Dot.Size = UDim2.new(0, 16, 0, 16)
-        
         local DotCorner = Instance.new("UICorner")
         DotCorner.CornerRadius = UDim.new(1, 0)
         DotCorner.Parent = Dot
@@ -444,7 +423,6 @@ function Library:CreateWindow(Settings)
     function Elements:Slider(Text, Min, Max, Default, Callback)
         local Value = Default or Min
         local Callback = Callback or function() end
-        
         local SliderFrame = Instance.new("Frame")
         SliderFrame.Name = "Slider"
         SliderFrame.Parent = Container
@@ -453,7 +431,6 @@ function Library:CreateWindow(Settings)
         local Corner = Instance.new("UICorner")
         Corner.CornerRadius = UDim.new(0, 8)
         Corner.Parent = SliderFrame
-        
         local Title = Instance.new("TextLabel")
         Title.Parent = SliderFrame
         Title.BackgroundTransparency = 1.000
@@ -479,46 +456,37 @@ function Library:CreateWindow(Settings)
         Bar.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         Bar.Position = UDim2.new(0, 12, 0, 35)
         Bar.Size = UDim2.new(1, -24, 0, 6)
-        
         local BarCorner = Instance.new("UICorner")
         BarCorner.CornerRadius = UDim.new(1, 0)
         BarCorner.Parent = Bar
-        
         local Fill = Instance.new("Frame")
         Fill.Parent = Bar
         Fill.BackgroundColor3 = Config.Colors.Accent
         Fill.Size = UDim2.new((Value - Min) / (Max - Min), 0, 1, 0)
-        
         local FillCorner = Instance.new("UICorner")
         FillCorner.CornerRadius = UDim.new(1, 0)
         FillCorner.Parent = Fill
-        
         local Knob = Instance.new("Frame")
         Knob.Parent = Fill
         Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         Knob.Position = UDim2.new(1, -6, 0.5, -6)
         Knob.Size = UDim2.new(0, 12, 0, 12)
-        
         local KnobCorner = Instance.new("UICorner")
         KnobCorner.CornerRadius = UDim.new(1, 0)
         KnobCorner.Parent = Knob
-        
         local DragBtn = Instance.new("TextButton")
         DragBtn.Parent = SliderFrame
         DragBtn.BackgroundTransparency = 1
         DragBtn.Size = UDim2.new(1, 0, 1, 0)
         DragBtn.Text = ""
-        
         local function Update(Input)
             local SizeScale = math.clamp((Input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
             local NewValue = math.floor(Min + ((Max - Min) * SizeScale))
-            
             TweenService:Create(Fill, TweenInfo.new(0.05), {Size = UDim2.new(SizeScale, 0, 1, 0)}):Play()
             ValueLabel.Text = tostring(NewValue)
             Callback(NewValue)
         end
         local Dragging = false
-        
         DragBtn.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 then
                 Dragging = true
@@ -526,14 +494,12 @@ function Library:CreateWindow(Settings)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(1, -8, 0.5, -8)}):Play()
             end
         end)
-        
         UserInputService.InputEnded:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 then
                 Dragging = false
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(1, -6, 0.5, -6)}):Play()
             end
         end)
-        
         UserInputService.InputChanged:Connect(function(Input)
             if Dragging and Input.UserInputType == Enum.UserInputType.MouseMovement then
                 Update(Input)
@@ -543,7 +509,6 @@ function Library:CreateWindow(Settings)
     function Elements:NumberInput(Text, Default, Callback)
         local Value = Default or 1
         local Callback = Callback or function() end
-        
         local InputFrame = Instance.new("Frame")
         InputFrame.Name = "InputFrame"
         InputFrame.Parent = Container
@@ -552,7 +517,6 @@ function Library:CreateWindow(Settings)
         local Corner = Instance.new("UICorner")
         Corner.CornerRadius = UDim.new(0, 8)
         Corner.Parent = InputFrame
-        
         local Title = Instance.new("TextLabel")
         Title.Parent = InputFrame
         Title.BackgroundTransparency = 1.000
@@ -604,7 +568,6 @@ function Library:CreateWindow(Settings)
         TextBox.TextColor3 = Config.Colors.Text
         TextBox.TextSize = 14
         TextBox.PlaceholderText = "#"
-        
         local BoxCorner = Instance.new("UICorner")
         BoxCorner.CornerRadius = UDim.new(0, 4)
         BoxCorner.Parent = TextBox
@@ -660,7 +623,6 @@ function Library:CreateWindow(Settings)
         TextBox.PlaceholderText = Placeholder or "Type here..."
         TextBox.TextColor3 = Config.Colors.Text
         TextBox.TextSize = 14
-        
         local BoxCorner = Instance.new("UICorner")
         BoxCorner.CornerRadius = UDim.new(0, 4)
         BoxCorner.Parent = TextBox
@@ -713,19 +675,20 @@ function Library:CreateWindow(Settings)
                 if v:IsA("TextButton") then v:Destroy() end
             end
             for _, opt in pairs(newOptions) do
+                local rawValue = type(opt) == "table" and opt.Value or opt
+                local displayValue = type(opt) == "table" and opt.Display or opt
                 local optBtn = Instance.new("TextButton")
                 optBtn.Parent = OptionsContainer
                 optBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
                 optBtn.BorderSizePixel = 0
                 optBtn.Size = UDim2.new(1, 0, 0, 30)
                 optBtn.Font = Config.FontRegular
-                optBtn.Text = tostring(opt)
+                optBtn.Text = tostring(displayValue)
                 optBtn.TextColor3 = Config.Colors.TextDark
                 optBtn.TextSize = 13
-                
                 optBtn.MouseButton1Click:Connect(function()
-                    Selected = opt
-                    MainButton.Text = "  " .. Text .. ": " .. Selected
+                    Selected = rawValue
+                    MainButton.Text = "  " .. Text .. ": " .. tostring(displayValue)
                     Toggled = false
                     TweenService:Create(DropdownFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 40)}):Play()
                     TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = 0}):Play()
@@ -737,11 +700,25 @@ function Library:CreateWindow(Settings)
         MainButton.MouseButton1Click:Connect(function()
             Toggled = not Toggled
             local TargetSize = Toggled and UDim2.new(1, 0, 0, 40 + (#OptionsContainer:GetChildren() - 1) * 30) or UDim2.new(1, 0, 0, 40)
-            if Toggled and Text:find("Player") then -- Dynamic refresh for Player dropdowns
-                local names = {}
-                for _, p in pairs(Players:GetPlayers()) do table.insert(names, p.Name) end
-                RefreshOptions(names)
-                TargetSize = UDim2.new(1, 0, 0, 40 + (#names) * 30)
+            if Toggled and Text:find("Player") then
+                local options = {}
+                for _, p in pairs(Players:GetPlayers()) do
+                    local isIgnored = false
+                    if Text:find("Ignore") then
+                        for _, ignored in pairs(Settings.HitboxIgnoreList or {}) do
+                            if p.Name == ignored then
+                                isIgnored = true
+                                break
+                            end
+                        end
+                    end
+                    table.insert(options, {
+                        Value = p.Name,
+                        Display = (isIgnored and "🚫 " or "") .. p.Name
+                    })
+                end
+                RefreshOptions(options)
+                TargetSize = UDim2.new(1, 0, 0, 40 + (#options) * 30)
             end
             TweenService:Create(DropdownFrame, TweenInfo.new(0.3), {Size = TargetSize}):Play()
             TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = Toggled and 180 or 0}):Play()
@@ -775,8 +752,16 @@ local Settings = {
     ClickToFlingEnabled = false,
     ZoomUnlockerEnabled = false,
     MaxZoomDistance = 500,
-    ZoomUnlockerEnabled = false,
-    MaxZoomDistance = 500,
+    AutoRespawnTPEnabled = false,
+    HitboxExpanderEnabled = false,
+    HitboxSize = 2,
+    HitboxTeamCheck = false,
+    HitboxIgnoreList = {},
+    WalkOnWaterEnabled = false,
+    FreecamEnabled = false,
+    FreecamSpeed = 1,
+    FPSBoosterEnabled = false,
+    FPSBoosterCache = {},
     OriginalValuesSaved = false,
     OriginalAmbient = nil,
     OriginalBrightness = nil,
@@ -796,51 +781,38 @@ local ConfigName = "config.json"
 local UIElements = {}
 local function ToggleFly(state)
     Settings.FlyEnabled = state
-    
     if state then
         local character = LocalPlayer.Character
         if not character then return end
         local root = character:WaitForChild("HumanoidRootPart")
         local humanoid = character:WaitForChild("Humanoid")
-        
         local bg = Instance.new("BodyGyro", root)
         bg.P = 9e4
         bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
         bg.CFrame = root.CFrame
-        
         local bv = Instance.new("BodyVelocity", root)
         bv.Velocity = Vector3.new(0, 0, 0)
         bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        
         task.spawn(function()
             while Settings.FlyEnabled and character and humanoid.Health > 0 do
                 RunService.RenderStepped:Wait()
                 humanoid.PlatformStand = true
                 local camera = workspace.CurrentCamera
                 bg.CFrame = camera.CFrame
-                
                 local moveDirection = humanoid.MoveDirection
                 local verticalDir = 0
-                
-                -- Up Movement (Space for PC, Jump button for Mobile)
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) or humanoid.Jump then
                     verticalDir = 1
                 end
-                -- Down Movement (Ctrl for PC)
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
                     verticalDir = -1
                 end
-                
                 local velocity = Vector3.new(0, 0, 0)
                 if moveDirection.Magnitude > 0 then
-                    -- Convert horizontal world direction to camera-relative movement
-                    -- This allows Camera-Direction Fly for both PC & Mobile
                     local relMove = camera.CFrame:VectorToObjectSpace(moveDirection)
                     local flyDir = (camera.CFrame.LookVector * -relMove.Z) + (camera.CFrame.RightVector * relMove.X)
                     velocity = flyDir.Unit * (Settings.FlySpeed * 50)
                 end
-                
-                -- Combine with manual vertical override
                 bv.Velocity = velocity + (Vector3.new(0, verticalDir, 0) * (Settings.FlySpeed * 50))
             end
             if bg then bg:Destroy() end
@@ -877,7 +849,6 @@ local function ServerHop()
     local function GetServer()
         local raw = game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
         local decoded = HttpService:JSONDecode(raw)
-        
         if decoded.data then
             local servers = {}
             for _, server in pairs(decoded.data) do
@@ -891,7 +862,6 @@ local function ServerHop()
         end
         return nil
     end
-    
     local ServerId = GetServer()
     if ServerId then
         TeleportService:TeleportToPlaceInstance(PlaceId, ServerId, LocalPlayer)
@@ -905,19 +875,216 @@ local function ServerHop()
         ServerHop()
     end
 end
+local WaterPart = nil
+local WaterConnection = nil
+local function ToggleWalkOnWater(state)
+    Settings.WalkOnWaterEnabled = state
+    if state then
+        if not WaterPart then
+            WaterPart = Instance.new("Part")
+            WaterPart.Name = "DiabloWaterPlatform"
+            WaterPart.Size = Vector3.new(10, 1, 10)
+            WaterPart.Transparency = 1
+            WaterPart.Anchored = true
+            WaterPart.CanCollide = true
+            WaterPart.Parent = workspace
+        end
+        if WaterConnection then WaterConnection:Disconnect() end
+        WaterConnection = RunService.Heartbeat:Connect(function()
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local ray = Ray.new(hrp.Position + Vector3.new(0, 0, 0), Vector3.new(0, -10, 0))
+                local hit, pos, norm, material = workspace:FindPartOnRayWithIgnoreList(ray, {char, WaterPart})
+                local isWater = (material == Enum.Material.Water) or (hit and hit.Name:lower():find("water"))
+                if isWater then
+                    WaterPart.CFrame = CFrame.new(hrp.Position.X, pos.Y - 0.5, hrp.Position.Z)
+                    WaterPart.CanCollide = true
+                else
+                    WaterPart.CanCollide = false
+                end
+            end
+        end)
+    else
+        if WaterConnection then
+            WaterConnection:Disconnect()
+            WaterConnection = nil
+        end
+        if WaterPart then
+            WaterPart:Destroy()
+            WaterPart = nil
+        end
+    end
+end
+local FPSBoosterConnection = nil
+local function ToggleFPSBooster(state)
+    Settings.FPSBoosterEnabled = state
+    if state then
+        Settings.FPSBoosterCache = {}
+        local function OptimizeInstance(inst)
+            if not inst or not inst:IsA("Instance") then return end
+            if inst:IsA("BasePart") then
+                if not Settings.FPSBoosterCache[inst] then
+                    Settings.FPSBoosterCache[inst] = {
+                        Material = inst.Material,
+                        CastShadow = inst.CastShadow
+                    }
+                end
+                inst.Material = Enum.Material.SmoothPlastic
+                inst.CastShadow = false
+            elseif inst:IsA("MeshPart") or inst:IsA("SpecialMesh") then
+                if not Settings.FPSBoosterCache[inst] then
+                    Settings.FPSBoosterCache[inst] = {}
+                    if inst:IsA("MeshPart") then
+                        Settings.FPSBoosterCache[inst].TextureID = inst.TextureID
+                        inst.TextureID = ""
+                    end
+                    if inst:FindFirstChild("RenderFidelity") then
+                        Settings.FPSBoosterCache[inst].RenderFidelity = inst.RenderFidelity
+                        inst.RenderFidelity = Enum.RenderFidelity.Performance
+                    end
+                end
+            elseif inst:IsA("Decal") or inst:IsA("Texture") then
+                if not Settings.FPSBoosterCache[inst] then
+                    Settings.FPSBoosterCache[inst] = {Transparency = inst.Transparency}
+                end
+                inst.Transparency = 1
+            elseif inst:IsA("ParticleEmitter") or inst:IsA("Smoke") or inst:IsA("Fire") or inst:IsA("Trail") then
+                if not Settings.FPSBoosterCache[inst] then
+                    Settings.FPSBoosterCache[inst] = {Enabled = inst.Enabled}
+                end
+                inst.Enabled = false
+            end
+        end
+        for _, obj in pairs(workspace:GetDescendants()) do
+            OptimizeInstance(obj)
+        end
+        for _, obj in pairs(Lighting:GetDescendants()) do
+            if obj:IsA("BlurEffect") or obj:IsA("BloomEffect") or obj:IsA("SunRaysEffect") then
+                if not Settings.FPSBoosterCache[obj] then
+                    Settings.FPSBoosterCache[obj] = {Enabled = obj.Enabled}
+                end
+                obj.Enabled = false
+            end
+        end
+        if not Settings.FPSBoosterCache[Lighting] then
+            Settings.FPSBoosterCache[Lighting] = {GlobalShadows = Lighting.GlobalShadows}
+        end
+        Lighting.GlobalShadows = false
+        local terrain = workspace:FindFirstChildOfClass("Terrain")
+        if terrain then
+            if not Settings.FPSBoosterCache[terrain] then
+                Settings.FPSBoosterCache[terrain] = {
+                    WaterTransparency = terrain.WaterTransparency,
+                    WaterReflectance = terrain.WaterReflectance,
+                    WaterWaveSize = terrain.WaterWaveSize,
+                    WaterWaveSpeed = terrain.WaterWaveSpeed,
+                    Decoration = terrain.Decoration
+                }
+            end
+            terrain.WaterTransparency = 1
+            terrain.WaterReflectance = 0
+            terrain.WaterWaveSize = 0
+            terrain.WaterWaveSpeed = 0
+            terrain.Decoration = false
+        end
+        FPSBoosterConnection = workspace.DescendantAdded:Connect(function(obj)
+            if Settings.FPSBoosterEnabled then
+                OptimizeInstance(obj)
+            end
+        end)
+    else
+        if FPSBoosterConnection then
+            FPSBoosterConnection:Disconnect()
+            FPSBoosterConnection = nil
+        end
+        for inst, props in pairs(Settings.FPSBoosterCache) do
+            if inst and inst.Parent then
+                for prop, value in pairs(props) do
+                    pcall(function()
+                        inst[prop] = value
+                    end)
+                end
+            end
+        end
+        Settings.FPSBoosterCache = {}
+    end
+end
+local DronePart = nil
+local function ToggleFreecam(state)
+    Settings.FreecamEnabled = state
+    local Camera = workspace.CurrentCamera
+    if state then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hum then
+            hum.PlatformStand = true
+            hum.AutoRotate = false
+        end
+        if hrp then hrp.Anchored = true end
+        if not DronePart then
+            DronePart = Instance.new("Part")
+            DronePart.Name = "DiabloDrone"
+            DronePart.Transparency = 1
+            DronePart.Anchored = true
+            DronePart.CanCollide = false
+            DronePart.Size = Vector3.new(1, 1, 1)
+            DronePart.Parent = workspace
+        end
+        DronePart.CFrame = Camera.CFrame
+        Camera.CameraSubject = DronePart
+        Camera.CameraType = Enum.CameraType.Custom
+        if FreecamConnection then FreecamConnection:Disconnect() end
+        FreecamConnection = RunService.RenderStepped:Connect(function(dt)
+            local speed = Settings.FreecamSpeed * 50
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then speed = speed * 2 end
+            local moveVector = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + Vector3.new(0, 0, -1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector + Vector3.new(0, 0, 1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector + Vector3.new(-1, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + Vector3.new(1, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.E) or UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector = moveVector + Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Q) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveVector = moveVector + Vector3.new(0, -1, 0) end
+            if hum and hum.MoveDirection.Magnitude > 0 then
+                local joystickDir = hum.MoveDirection
+                local localVector = Camera.CFrame:VectorToObjectSpace(joystickDir)
+                moveVector = moveVector + localVector
+            end
+            if hum and UserInputService:IsKeyDown(Enum.KeyCode.ButtonA) or (hum and hum.Jump) then
+                moveVector = moveVector + Vector3.new(0, 1, 0)
+            end
+            if moveVector.Magnitude > 0 then
+                local direction = Camera.CFrame:VectorToWorldSpace(moveVector)
+                DronePart.CFrame = DronePart.CFrame + (direction.Unit * speed * dt)
+            end
+        end)
+    else
+        Camera.CameraType = Enum.CameraType.Custom
+        if LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hum then
+                hum.PlatformStand = false
+                hum.AutoRotate = true
+            end
+            if hrp then hrp.Anchored = false end
+            Camera.CameraSubject = hum or LocalPlayer.Character
+        end
+        if FreecamConnection then FreecamConnection:Disconnect() FreecamConnection = nil end
+        if DronePart then DronePart:Destroy() DronePart = nil end
+    end
+end
 local function FindSmallServer()
     local PlaceId = game.PlaceId
-    
     local function getServers(cursor)
         local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
         if cursor then
             url = url .. "&cursor=" .. cursor
         end
-        
         local success, result = pcall(function()
             return game:HttpGet(url)
         end)
-        
         if success then
             local successDecode, decoded = pcall(function() return HttpService:JSONDecode(result) end)
             if successDecode then
@@ -926,7 +1093,6 @@ local function FindSmallServer()
         end
         return nil
     end
-    
     task.spawn(function()
         local cursor = nil
         game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -934,14 +1100,11 @@ local function FindSmallServer()
             Text = "Searching for small server...",
             Duration = 3
         })
-        
-        -- Try up to 10 pages for better chance
         for i = 1, 10 do
             local data = getServers(cursor)
             if data and data.data then
                 local bestServer = nil
                 local minPlayers = Players.MaxPlayers
-                
                 for _, server in pairs(data.data) do
                     if server.playing and server.playing > 0 and server.playing < Players.MaxPlayers and server.id ~= game.JobId then
                         if server.playing <= 2 then
@@ -954,27 +1117,69 @@ local function FindSmallServer()
                         end
                     end
                 end
-                
                 cursor = data.nextPageCursor
-                if not cursor then 
+                if not cursor then
                     if bestServer then
                         TeleportService:TeleportToPlaceInstance(PlaceId, bestServer, LocalPlayer)
                         return
                     end
-                    break 
+                    break
                 end
             else
                 break
             end
             task.wait(0.1)
         end
-        
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Diablo Discovery",
             Text = "No small server found. Try again!",
             Duration = 3
         })
     end)
+end
+local LastDeathPosition = nil
+local function TeleportToLastDeath()
+    if LastDeathPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = LastDeathPosition
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Death Recall",
+            Text = "Teleported to last death position! 💀",
+            Duration = 3
+        })
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Death Recall",
+            Text = "No death position saved yet!",
+            Duration = 3
+        })
+    end
+end
+local function SetupDeathRecall()
+    local function onCharacterAdded(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid.Died:Connect(function()
+            if character:FindFirstChild("HumanoidRootPart") then
+                LastDeathPosition = character.HumanoidRootPart.CFrame
+            end
+        end)
+        if Settings.AutoRespawnTPEnabled and LastDeathPosition then
+            task.spawn(function()
+                task.wait(0.5)
+                if character:FindFirstChild("HumanoidRootPart") then
+                    character.HumanoidRootPart.CFrame = LastDeathPosition
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Death Recall",
+                        Text = "Auto-teleported back! ♻️",
+                        Duration = 3
+                    })
+                end
+            end)
+        end
+    end
+    LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+    if LocalPlayer.Character then
+        task.spawn(function() onCharacterAdded(LocalPlayer.Character) end)
+    end
 end
 local function ToggleAntiAFK(state)
     Settings.AntiAFKEnabled = state
@@ -997,7 +1202,6 @@ local function ToggleFling(state)
                 RunService.Heartbeat:Wait()
                 local character = LocalPlayer.Character
                 local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                
                 if hrp then
                     local vel = hrp.Velocity
                     hrp.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
@@ -1049,12 +1253,51 @@ local function ToggleAntiFling(state)
         end)
     end
 end
+local function UpdateHitboxes()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local isIgnored = false
+                for _, ignoredName in pairs(Settings.HitboxIgnoreList) do
+                    if player.Name == ignoredName then
+                        isIgnored = true
+                        break
+                    end
+                end
+                local isTeammate = Settings.HitboxTeamCheck and player.Team == LocalPlayer.Team
+                if Settings.HitboxExpanderEnabled and not isIgnored and not isTeammate then
+                    hrp.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                    hrp.Transparency = 0.7
+                    hrp.CanCollide = false
+                else
+                    hrp.Size = Vector3.new(2, 2, 1)
+                    hrp.Transparency = 1
+                    hrp.CanCollide = false
+                end
+            end
+        end
+    end
+end
+local HitboxConnection = nil
+local function ToggleHitboxExpander(state)
+    Settings.HitboxExpanderEnabled = state
+    if state then
+        if HitboxConnection then HitboxConnection:Disconnect() end
+        HitboxConnection = RunService.Heartbeat:Connect(UpdateHitboxes)
+    else
+        if HitboxConnection then
+            HitboxConnection:Disconnect()
+            HitboxConnection = nil
+        end
+        UpdateHitboxes()
+    end
+end
 local InstantInteractConnection = nil
 local OriginalPrompts = {}
 local function ToggleInstantInteract(state)
     Settings.InstantInteractEnabled = state
     if state then
-        -- Process existing prompts
         for _, prompt in pairs(workspace:GetDescendants()) do
             if prompt:IsA("ProximityPrompt") then
                 if not OriginalPrompts[prompt] then
@@ -1063,12 +1306,10 @@ local function ToggleInstantInteract(state)
                 prompt.HoldDuration = 0
             end
         end
-        
-        -- Serialize new prompts
         if InstantInteractConnection then InstantInteractConnection:Disconnect() end
         InstantInteractConnection = workspace.DescendantAdded:Connect(function(descendant)
             if descendant:IsA("ProximityPrompt") then
-                task.wait() -- Wait for properties to initialize
+                task.wait()
                 if not OriginalPrompts[descendant] then
                     OriginalPrompts[descendant] = descendant.HoldDuration
                 end
@@ -1078,25 +1319,21 @@ local function ToggleInstantInteract(state)
             end
         end)
     else
-        -- Cleanup connection
-        if InstantInteractConnection then 
+        if InstantInteractConnection then
             InstantInteractConnection:Disconnect()
             InstantInteractConnection = nil
         end
-        
-        -- Restore originals
         for prompt, duration in pairs(OriginalPrompts) do
             if prompt and prompt.Parent then
                 prompt.HoldDuration = duration
             end
         end
-        OriginalPrompts = {} -- Clear cache
+        OriginalPrompts = {}
     end
 end
 local ClickToFlingConnection = nil
 local function ToggleClickToFling(state)
     Settings.ClickToFlingEnabled = state
-    
     if state then
         if ClickToFlingConnection then ClickToFlingConnection:Disconnect() end
         ClickToFlingConnection = UserInputService.InputBegan:Connect(function(input, processed)
@@ -1105,23 +1342,16 @@ local function ToggleClickToFling(state)
                 local mousePos = UserInputService:GetMouseLocation()
                 local ray = workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
                 local hitPart = workspace:FindPartOnRayWithIgnoreList(Ray.new(ray.Origin, ray.Direction * 1000), {LocalPlayer.Character})
-                
                 if hitPart and hitPart.Parent then
                     local targetPlayer = Players:GetPlayerFromCharacter(hitPart.Parent) or Players:GetPlayerFromCharacter(hitPart.Parent.Parent)
-                    
                     if targetPlayer and targetPlayer ~= LocalPlayer and targetPlayer.Character then
                         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        
                         if hrp and targetHRP then
                             local oldCF = hrp.CFrame
-                            
-                            -- Extreme Fling Physics
                             hrp.CFrame = targetHRP.CFrame
                             hrp.Velocity = Vector3.new(9999999, 9999999, 9999999)
-                            
                             task.wait(0.1)
-                            
                             hrp.CFrame = oldCF
                             hrp.Velocity = Vector3.new(0, 0, 0)
                             hrp.RotVelocity = Vector3.new(0, 0, 0)
@@ -1145,7 +1375,6 @@ local function ToggleAntiTouch(state)
                 if part:IsA("BasePart") then
                     local isKillPart = false
                     local name = part.Name:lower()
-                    
                     local keywords = {"lava", "kill", "deadly", "death", "spike", "hurt", "damag", "trap", "void", "laser", "saw", "blade", "spin", "beam", "plasma", "toxic", "acid", "poison"}
                     for _, kw in pairs(keywords) do
                         if name:find(kw) then
@@ -1153,14 +1382,12 @@ local function ToggleAntiTouch(state)
                             break
                         end
                     end
-                    
                     if not isKillPart and part.Material == Enum.Material.Neon then
                         local r, g, b = part.Color.R, part.Color.G, part.Color.B
                         if (r > 0.7 and g < 0.4 and b < 0.4) or (r > 0.7 and g > 0.4 and b < 0.2) then
                             isKillPart = true
                         end
                     end
-                    
                     if isKillPart then
                         part.CanTouch = false
                         for _, child in pairs(part:GetChildren()) do
@@ -1168,8 +1395,6 @@ local function ToggleAntiTouch(state)
                                 child:Destroy()
                             end
                         end
-                        
-                        -- Prevent recreation
                         if not part:FindFirstChild("AntiTouchWatcher") then
                             local watcher = Instance.new("BoolValue")
                             watcher.Name = "AntiTouchWatcher"
@@ -1210,15 +1435,11 @@ local function ToggleAntiTouch(state)
 end
 local function createESP(player)
     if player == LocalPlayer then return end
-    
-    -- Team Check Logic
     if Settings.ESPTeamCheck and player.Team == LocalPlayer.Team then
-        -- Cleanup existing if team check is toggled on
         if espConnections[player] then
             if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
             if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
             if espConnections[player].update then espConnections[player].update:Disconnect() end
-            -- Keep charConn to re-check on respawn
         end
         return
     end
@@ -1231,7 +1452,6 @@ local function createESP(player)
     if espConnections[player] and espConnections[player].update then
         espConnections[player].update:Disconnect()
     end
-    
     local function applyToCharacter(character)
         if not character then return end
         local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
@@ -1276,16 +1496,13 @@ local function createESP(player)
                 if updateConnection then updateConnection:Disconnect() end
                 return
             end
-            
             local localHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             local playerHRP = player.Character:FindFirstChild("HumanoidRootPart")
-            
             if localHRP and playerHRP then
                 local distance = math.floor((localHRP.Position - playerHRP.Position).Magnitude)
                 distanceLabel.Text = distance .. " studs"
             end
         end)
-        
         if not espConnections[player] then espConnections[player] = {} end
         espConnections[player].highlight = highlight
         espConnections[player].billboard = billboardGui
@@ -1294,26 +1511,21 @@ local function createESP(player)
     if player.Character then
         task.spawn(function() applyToCharacter(player.Character) end)
     end
-    
     local charConn = player.CharacterAdded:Connect(function(char)
         task.wait(0.5)
         applyToCharacter(char)
     end)
-    
     if not espConnections[player] then espConnections[player] = {} end
     espConnections[player].charConn = charConn
 end
 local function enableESP()
     if not Settings.ESPEnabled then return end
-    
     for _, player in pairs(Players:GetPlayers()) do
         createESP(player)
     end
-    
     espConnections.playerAdded = Players.PlayerAdded:Connect(function(player)
         createESP(player)
     end)
-    
     espConnections.playerRemoving = Players.PlayerRemoving:Connect(function(player)
         if espConnections[player] then
             if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
@@ -1327,7 +1539,6 @@ end
 local function disableESP()
     if espConnections.playerAdded then espConnections.playerAdded:Disconnect() espConnections.playerAdded = nil end
     if espConnections.playerRemoving then espConnections.playerRemoving:Disconnect() espConnections.playerRemoving = nil end
-    
     for player, data in pairs(espConnections) do
         if type(player) == "userdata" then
             if data.highlight then data.highlight:Destroy() end
@@ -1346,8 +1557,6 @@ local function SaveOriginalLighting()
         Settings.OriginalFogEnd = Lighting.FogEnd
         Settings.OriginalFogStart = Lighting.FogStart
         Settings.OriginalOutdoorAmbient = Lighting.OutdoorAmbient
-        
-        -- Save Atmosphere
         local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
         if atmosphere then
             Settings.OriginalAtmosphere = {
@@ -1375,8 +1584,6 @@ local function RestoreOriginalLighting()
         Lighting.FogEnd = Settings.OriginalFogEnd
         Lighting.FogStart = Settings.OriginalFogStart
         Lighting.OutdoorAmbient = Settings.OriginalOutdoorAmbient
-        
-        -- Restore Atmosphere
         if Settings.OriginalAtmosphere and Settings.OriginalAtmosphere.Instance then
             Settings.OriginalAtmosphere.Instance.Density = Settings.OriginalAtmosphere.Density
             Settings.OriginalAtmosphere.Instance.Offset = Settings.OriginalAtmosphere.Offset
@@ -1397,8 +1604,6 @@ local function SetFullbright(enable)
         Lighting.FogEnd = 1000000
         Lighting.FogStart = 0
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        
-        -- Handle Atmosphere
         local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
         if atmosphere then
             atmosphere.Density = 0
@@ -1504,7 +1709,6 @@ local function SpectatePlayer(targetName)
             break
         end
     end
-    
     if target then
         if target.Character and target.Character:FindFirstChild("Humanoid") then
              workspace.CurrentCamera.CameraSubject = target.Character.Humanoid
@@ -1529,21 +1733,18 @@ local function SaveConfig()
     if not isfolder(FolderName) then
         makefolder(FolderName)
     end
-    
     local ConfigData = {}
     local SaveableKeys = {
-        "FullbrightEnabled", "TPWalkEnabled", "TPWalkSpeed", 
-        "NoClipEnabled", "InfiniteJumpEnabled", "ESPEnabled", 
+        "FullbrightEnabled", "TPWalkEnabled", "TPWalkSpeed",
+        "NoClipEnabled", "InfiniteJumpEnabled", "ESPEnabled",
         "TouchFlingEnabled", "AntiFlingEnabled", "InstantInteractEnabled", "ClickToFlingEnabled",
-        "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled", "ESPTeamCheck"
+        "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled", "ESPTeamCheck", "AutoRespawnTPEnabled",
+        "HitboxExpanderEnabled", "HitboxSize", "HitboxTeamCheck", "WalkOnWaterEnabled", "FreecamEnabled", "FreecamSpeed"
     }
-    
     for _, key in pairs(SaveableKeys) do
         ConfigData[key] = Settings[key]
     end
-    
     writefile(FolderName .. "/" .. ConfigName, HttpService:JSONEncode(ConfigData))
-    
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Diablo Script",
         Text = "Config Saved successfully! 💾",
@@ -1554,18 +1755,15 @@ local function LoadConfig()
     if isfile(FolderName .. "/" .. ConfigName) then
         local raw = readfile(FolderName .. "/" .. ConfigName)
         local success, decoded = pcall(function() return HttpService:JSONDecode(raw) end)
-        
         if success and type(decoded) == "table" then
             for key, value in pairs(decoded) do
                 Settings[key] = value
             end
-            -- Sync UI after loading
             for key, element in pairs(UIElements) do
                 if Settings[key] ~= nil then
                     element.Set(Settings[key])
                 end
             end
-            -- Activate Logic
             task.spawn(function()
                 SetFullbright(Settings.FullbrightEnabled)
                 SetupNoClip()
@@ -1581,6 +1779,9 @@ local function LoadConfig()
                 if Settings.AntiTouchEnabled then ToggleAntiTouch(true) end
                 ToggleAntiScreenShake(Settings.AntiScreenShakeEnabled)
                 ToggleClickToFling(Settings.ClickToFlingEnabled)
+                ToggleHitboxExpander(Settings.HitboxExpanderEnabled)
+                ToggleWalkOnWater(Settings.WalkOnWaterEnabled)
+                ToggleFreecam(Settings.FreecamEnabled)
             end)
             return true
         end
@@ -1594,34 +1795,55 @@ Window:Section("Fling Control 🌪️")
 Window:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
     ToggleFling(state)
 end)
-UIElements.AntiFlingEnabled = Window:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
-    ToggleAntiFling(state)
-end)
 UIElements.ClickToFlingEnabled = Window:Toggle("Click-to-Fling 🎯", Settings.ClickToFlingEnabled, function(state)
     ToggleClickToFling(state)
 end)
-Window:Section("Main Features")
-UIElements.InstantInteractEnabled = Window:Toggle("Instant Interact 👆", Settings.InstantInteractEnabled, function(state)
-    ToggleInstantInteract(state)
+UIElements.AntiFlingEnabled = Window:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
+    ToggleAntiFling(state)
 end)
-UIElements.FullbrightEnabled = Window:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
-    SetFullbright(state)
+Window:Section("Hitbox Expander 📦")
+UIElements.HitboxExpanderEnabled = Window:Toggle("Enable Expander 🟢", Settings.HitboxExpanderEnabled, function(state)
+    ToggleHitboxExpander(state)
 end)
-UIElements.NoClipEnabled = Window:Toggle("NoClip 👻", Settings.NoClipEnabled, function(state)
-    Settings.NoClipEnabled = state
-    SetupNoClip()
+UIElements.HitboxSize = Window:NumberInput("Hitbox Size 📏", Settings.HitboxSize, function(value)
+    Settings.HitboxSize = value
 end)
-UIElements.InfiniteJumpEnabled = Window:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
-    Settings.InfiniteJumpEnabled = state
-    SetupInfiniteJump()
+UIElements.HitboxTeamCheck = Window:Toggle("Hitbox Team Check 🛡️", Settings.HitboxTeamCheck, function(state)
+    Settings.HitboxTeamCheck = state
 end)
-UIElements.AntiAFKEnabled = Window:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
-    ToggleAntiAFK(state)
+Window:Dropdown("Ignore Player 🚫", {}, function(selected)
+    local foundIdx = nil
+    for i, name in ipairs(Settings.HitboxIgnoreList) do
+        if name == selected then
+            foundIdx = i
+            break
+        end
+    end
+    if foundIdx then
+        table.remove(Settings.HitboxIgnoreList, foundIdx)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Hitbox Expander",
+            Text = selected .. " removed from ignore list.",
+            Duration = 3
+        })
+    else
+        table.insert(Settings.HitboxIgnoreList, selected)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Hitbox Expander",
+            Text = selected .. " added to ignore list.",
+            Duration = 3
+        })
+    end
 end)
-UIElements.AntiTouchEnabled = Window:Toggle("Anti-Touch 🚫", Settings.AntiTouchEnabled, function(state)
-    ToggleAntiTouch(state)
+Window:Button("Clear Ignore List 🗑️", function()
+    Settings.HitboxIgnoreList = {}
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Hitbox Expander",
+        Text = "Ignore list cleared!",
+        Duration = 3
+    })
 end)
-Window:Section("Movement")
+Window:Section("Movement & Teleport ⚡")
 UIElements.FlyEnabled = Window:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
     ToggleFly(state)
 end)
@@ -1635,7 +1857,22 @@ end)
 UIElements.TPWalkSpeed = Window:NumberInput("TP Speed 🎯", 1, function(value)
     Settings.TPWalkSpeed = value
 end)
-Window:Section("Visuals")
+UIElements.WalkOnWaterEnabled = Window:Toggle("Walk on Water 🌊", Settings.WalkOnWaterEnabled, function(state)
+    ToggleWalkOnWater(state)
+end)
+Window:Dropdown("Teleport to Player 📍", {}, function(selected)
+    local target = Players:FindFirstChild(selected)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+    end
+end)
+UIElements.AutoRespawnTPEnabled = Window:Toggle("Auto Tp Last Death ♻️", Settings.AutoRespawnTPEnabled, function(state)
+    Settings.AutoRespawnTPEnabled = state
+end)
+Window:Button("TP to Last Death 💀", function()
+    TeleportToLastDeath()
+end)
+Window:Section("Visuals & Camera 👁️")
 UIElements.ESPEnabled = Window:Toggle("ESP 👁️", Settings.ESPEnabled, function(state)
     Settings.ESPEnabled = state
     if state then
@@ -1647,10 +1884,15 @@ end)
 UIElements.ESPTeamCheck = Window:Toggle("ESP Team Check 🛡️", Settings.ESPTeamCheck, function(state)
     Settings.ESPTeamCheck = state
     if Settings.ESPEnabled then
-        -- Refresh ESP to apply team check
         disableESP()
         enableESP()
     end
+end)
+UIElements.FreecamEnabled = Window:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
+    ToggleFreecam(state)
+end)
+UIElements.FreecamSpeed = Window:NumberInput("Freecam Speed 🏎️", Settings.FreecamSpeed, function(value)
+    Settings.FreecamSpeed = value
 end)
 Window:Dropdown("Spectate Player 📹", {}, function(selected)
     SpectatePlayer(selected)
@@ -1670,17 +1912,31 @@ UIElements.MaxZoomDistance = Window:NumberInput("Max Zoom Distance", Settings.Ma
         ToggleZoomUnlocker(true)
     end
 end)
-Window:Section("Teleport")
-Window:Dropdown("Select Player 📍", {}, function(selected)
-    local target = Players:FindFirstChild(selected)
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        end
-    end
+Window:Section("Game Tweaks 🌍")
+UIElements.NoClipEnabled = Window:Toggle("NoClip 👻", Settings.NoClipEnabled, function(state)
+    Settings.NoClipEnabled = state
+    SetupNoClip()
 end)
-Window:Section("Server & Utility")
+UIElements.InfiniteJumpEnabled = Window:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
+    Settings.InfiniteJumpEnabled = state
+    SetupInfiniteJump()
+end)
+UIElements.InstantInteractEnabled = Window:Toggle("Instant Interact 👆", Settings.InstantInteractEnabled, function(state)
+    ToggleInstantInteract(state)
+end)
+UIElements.AntiTouchEnabled = Window:Toggle("Anti-Touch 🚫", Settings.AntiTouchEnabled, function(state)
+    ToggleAntiTouch(state)
+end)
+UIElements.FullbrightEnabled = Window:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
+    SetFullbright(state)
+end)
+UIElements.FPSBoosterEnabled = Window:Toggle("FPS Booster ⚡", Settings.FPSBoosterEnabled, function(state)
+    ToggleFPSBooster(state)
+end)
+Window:Section("Server & System ⚙️")
+UIElements.AntiAFKEnabled = Window:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
+    ToggleAntiAFK(state)
+end)
 Window:Button("Rejoin Server 🔄", function()
     RejoinServer()
 end)
@@ -1696,13 +1952,23 @@ end)
 Window:Button("Load Config 📂", function()
     LoadConfig()
 end)
--- Auto Load
+task.spawn(function()
+    while true do
+        local names = {}
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer then
+                table.insert(names, v.Name)
+            end
+        end
+        task.wait(5)
+    end
+end)
+SetupDeathRecall()
 task.spawn(function()
     if not LocalPlayer.Character then
         LocalPlayer.CharacterAdded:Wait()
     end
     task.wait(1)
-    
     if LoadConfig() then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Diablo Script",
