@@ -763,6 +763,7 @@ local Settings = {
     NoClipEnabled = false,
     InfiniteJumpEnabled = false,
     ESPEnabled = false,
+    ESPTeamCheck = false,
     TouchFlingEnabled = false,
     AntiFlingEnabled = false,
     InstantInteractEnabled = false,
@@ -1209,6 +1210,18 @@ local function ToggleAntiTouch(state)
 end
 local function createESP(player)
     if player == LocalPlayer then return end
+    
+    -- Team Check Logic
+    if Settings.ESPTeamCheck and player.Team == LocalPlayer.Team then
+        -- Cleanup existing if team check is toggled on
+        if espConnections[player] then
+            if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
+            if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
+            if espConnections[player].update then espConnections[player].update:Disconnect() end
+            -- Keep charConn to re-check on respawn
+        end
+        return
+    end
     if espConnections[player] and espConnections[player].highlight then
         espConnections[player].highlight:Destroy()
     end
@@ -1522,7 +1535,7 @@ local function SaveConfig()
         "FullbrightEnabled", "TPWalkEnabled", "TPWalkSpeed", 
         "NoClipEnabled", "InfiniteJumpEnabled", "ESPEnabled", 
         "TouchFlingEnabled", "AntiFlingEnabled", "InstantInteractEnabled", "ClickToFlingEnabled",
-        "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled"
+        "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled", "ESPTeamCheck"
     }
     
     for _, key in pairs(SaveableKeys) do
@@ -1629,6 +1642,14 @@ UIElements.ESPEnabled = Window:Toggle("ESP 👁️", Settings.ESPEnabled, functi
         enableESP()
     else
         disableESP()
+    end
+end)
+UIElements.ESPTeamCheck = Window:Toggle("ESP Team Check 🛡️", Settings.ESPTeamCheck, function(state)
+    Settings.ESPTeamCheck = state
+    if Settings.ESPEnabled then
+        -- Refresh ESP to apply team check
+        disableESP()
+        enableESP()
     end
 end)
 Window:Dropdown("Spectate Player 📹", {}, function(selected)
