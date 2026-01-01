@@ -58,7 +58,7 @@ task.spawn(function()
                 Body = HttpService:JSONEncode(data)
             })
         end)
-        task.wait(60)
+        task.wait(300)
     end
 end)
 local Library = {}
