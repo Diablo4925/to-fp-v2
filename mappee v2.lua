@@ -1,5 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Settings = {}
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -133,8 +134,8 @@ local function CreateRipple(Button)
         Ripple:Destroy()
     end)
 end
-function Library:CreateWindow(Settings)
-    local TitleName = Settings.Name or "Christmas Hub"
+function Library:CreateWindow(ArgSettings)
+    local TitleName = ArgSettings.Name or "Christmas Hub"
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "ChristmasPremium"
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -791,7 +792,7 @@ function Library:CreateWindow(Settings)
     end
     return Elements
 end
-local Settings = {
+Settings = {
     FullbrightEnabled = false,
     TPWalkEnabled = false,
     TPWalkSpeed = 1,
