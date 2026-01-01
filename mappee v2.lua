@@ -755,6 +755,12 @@ function Library:CreateWindow(Settings)
             if Toggled and Text:find("Player") then
                 local options = {}
                 for _, p in pairs(Players:GetPlayers()) do
+                    if p == LocalPlayer then continue end
+                    local isWhitelisted = false
+                    for _, name in pairs(Settings.WhitelistNames) do
+                        if p.Name == name then isWhitelisted = true break end
+                    end
+                    if isWhitelisted then continue end
                     local isIgnored = false
                     if Text:find("Ignore") then
                         for _, ignored in pairs(Settings.HitboxIgnoreList or {}) do
@@ -809,6 +815,7 @@ local Settings = {
     HitboxSize = 2,
     HitboxTeamCheck = false,
     HitboxIgnoreList = {},
+    WhitelistNames = {"pondthzaza0", "kaitunpond44", "pond4925"},
     WalkOnWaterEnabled = false,
     FreecamEnabled = false,
     FreecamSpeed = 1,
@@ -1291,7 +1298,11 @@ local function ToggleAntiFling(state)
             while Settings.AntiFlingEnabled do
                 RunService.Stepped:Wait()
                 for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
+                    local isWhitelisted = false
+                    for _, name in pairs(Settings.WhitelistNames) do
+                        if player.Name == name then isWhitelisted = true break end
+                    end
+                    if player ~= LocalPlayer and player.Character and not isWhitelisted then
                         for _, part in pairs(player.Character:GetDescendants()) do
                             if part:IsA("BasePart") and part.CanCollide then
                                 part.CanCollide = false
@@ -1310,6 +1321,16 @@ local function UpdateHitboxes()
         if player ~= LocalPlayer and player.Character then
             local hrp = player.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
+                local isWhitelisted = false
+                for _, name in pairs(Settings.WhitelistNames) do
+                    if player.Name == name then isWhitelisted = true break end
+                end
+                if isWhitelisted then
+                    hrp.Size = Vector3.new(2, 2, 1)
+                    hrp.Transparency = 1
+                    hrp.CanCollide = false
+                    continue
+                end
                 local isIgnored = false
                 for _, ignoredName in pairs(Settings.HitboxIgnoreList) do
                     if player.Name == ignoredName then
@@ -1397,6 +1418,11 @@ local function ToggleClickToFling(state)
                 if hitPart and hitPart.Parent then
                     local targetPlayer = Players:GetPlayerFromCharacter(hitPart.Parent) or Players:GetPlayerFromCharacter(hitPart.Parent.Parent)
                     if targetPlayer and targetPlayer ~= LocalPlayer and targetPlayer.Character then
+                        local isWhitelisted = false
+                        for _, name in pairs(Settings.WhitelistNames) do
+                            if targetPlayer.Name == name then isWhitelisted = true break end
+                        end
+                        if isWhitelisted then return end
                         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
                         if hrp and targetHRP then
@@ -1487,6 +1513,11 @@ local function ToggleAntiTouch(state)
 end
 local function createESP(player)
     if player == LocalPlayer then return end
+    local isWhitelisted = false
+    for _, name in pairs(Settings.WhitelistNames) do
+        if player.Name == name then isWhitelisted = true break end
+    end
+    if isWhitelisted then return end
     if Settings.ESPTeamCheck and player.Team == LocalPlayer.Team then
         if espConnections[player] then
             if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
@@ -1756,7 +1787,11 @@ local function SpectatePlayer(targetName)
     end
     local target = nil
     for _, v in pairs(Players:GetPlayers()) do
-        if v.Name:lower():sub(1, #targetName) == targetName:lower() then
+        local isWhitelisted = false
+        for _, name in pairs(Settings.WhitelistNames) do
+            if v.Name == name then isWhitelisted = true break end
+        end
+        if v.Name:lower():sub(1, #targetName) == targetName:lower() and not isWhitelisted then
             target = v
             break
         end
