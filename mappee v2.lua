@@ -798,7 +798,9 @@ Settings = {
     TPWalkSpeed = 1,
     NoClipEnabled = false,
     InfiniteJumpEnabled = false,
+    InfiniteJumpEnabled = false,
     ESPEnabled = false,
+    ESPV2Enabled = false,
     ESPTeamCheck = false,
     TouchFlingEnabled = false,
     AntiFlingEnabled = false,
@@ -818,6 +820,7 @@ Settings = {
     HitboxIgnoreList = {},
     WhitelistNames = {"pondthzaza0", "kaitunpond44", "pond4925"},
     WalkOnWaterEnabled = false,
+    MapCleanerEnabled = false,
     FreecamEnabled = false,
     FreecamSpeed = 1,
     FPSBoosterEnabled = false,
@@ -1241,6 +1244,27 @@ local function SetupDeathRecall()
         task.spawn(function() onCharacterAdded(LocalPlayer.Character) end)
     end
 end
+local function ToggleMapCleaner()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") then
+            if v.Transparency == 1 and not v:IsA("MeshPart") then
+            else
+                for _, effect in pairs(v:GetChildren()) do
+                    if effect:IsA("Decal") or effect:IsA("Texture") or effect:IsA("ParticleEmitter") or effect:IsA("Trail") or effect:IsA("Beam") or effect:IsA("Smoke") or effect:IsA("Fire") then
+                        effect:Destroy()
+                    end
+                end
+            end
+        elseif v:IsA("Explosion") then
+            v:Destroy()
+        end
+    end
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Map Cleaner",
+        Text = "Successfully cleaned local workspace! 🧹",
+        Duration = 3
+    })
+end
 local function ToggleAntiAFK(state)
     Settings.AntiAFKEnabled = state
     if state then
@@ -1519,40 +1543,34 @@ local function createESP(player)
         if player.Name == name then isWhitelisted = true break end
     end
     if isWhitelisted then return end
-    if Settings.ESPTeamCheck and player.Team == LocalPlayer.Team then
-        if espConnections[player] then
-            if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
-            if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
-            if espConnections[player].update then espConnections[player].update:Disconnect() end
-        end
-        return
-    end
-    if espConnections[player] and espConnections[player].highlight then
-        espConnections[player].highlight:Destroy()
-    end
-    if espConnections[player] and espConnections[player].billboard then
-        espConnections[player].billboard:Destroy()
-    end
-    if espConnections[player] and espConnections[player].update then
-        espConnections[player].update:Disconnect()
-    end
     local function applyToCharacter(character)
         if not character then return end
         local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
         if not humanoidRootPart then return end
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "DiabloHighlight"
-        highlight.Parent = character
-        highlight.FillColor = Config.Colors.Accent
-        highlight.FillTransparency = 0.5
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.OutlineTransparency = 0
+        if espConnections[player] then
+            if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
+            if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
+            if espConnections[player].healthBar then espConnections[player].healthBar:Destroy() end
+            if espConnections[player].armorBar then espConnections[player].armorBar:Destroy() end
+            if espConnections[player].update then espConnections[player].update:Disconnect() end
+        end
+        local highlight = nil
+        if Settings.ESPEnabled then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "DiabloHighlight"
+            highlight.Parent = character
+            highlight.FillColor = Config.Colors.Accent
+            highlight.FillTransparency = 0.5
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.OutlineTransparency = 0
+        end
         local billboardGui = Instance.new("BillboardGui")
         billboardGui.Name = "ESPInfo"
         billboardGui.Parent = humanoidRootPart
-        billboardGui.Size = UDim2.new(0, 200, 0, 40)
+        billboardGui.Size = UDim2.new(0, 100, 0, 40)
         billboardGui.StudsOffset = Vector3.new(0, 3, 0)
         billboardGui.AlwaysOnTop = true
+        billboardGui.ClipsDescendants = false
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Parent = billboardGui
         nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
@@ -1574,14 +1592,88 @@ local function createESP(player)
         distanceLabel.Font = Config.FontRegular
         distanceLabel.TextStrokeTransparency = 0
         distanceLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        local healthBarBG = Instance.new("BillboardGui")
+        healthBarBG.Name = "HealthBar"
+        healthBarBG.Parent = humanoidRootPart
+        healthBarBG.Size = UDim2.new(0.2, 0, 2.5, 0)
+        healthBarBG.StudsOffset = Vector3.new(-1.8, 0, 0)
+        healthBarBG.AlwaysOnTop = true
+        local healthFrame = Instance.new("Frame")
+        healthFrame.Parent = healthBarBG
+        healthFrame.Size = UDim2.new(1, 0, 1, 0)
+        healthFrame.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+        healthFrame.BorderSizePixel = 0
+        local healthBarFill = Instance.new("Frame")
+        healthBarFill.Name = "Fill"
+        healthBarFill.Parent = healthFrame
+        healthBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        healthBarFill.BorderSizePixel = 0
+        healthBarFill.Size = UDim2.new(1, 0, 1, 0)
+        healthBarFill.AnchorPoint = Vector2.new(0, 1)
+        healthBarFill.Position = UDim2.new(0, 0, 1, 0)
+        local armorBarBG = Instance.new("BillboardGui")
+        armorBarBG.Name = "ArmorBar"
+        armorBarBG.Parent = humanoidRootPart
+        armorBarBG.Size = UDim2.new(0.2, 0, 2.5, 0)
+        armorBarBG.StudsOffset = Vector3.new(1.8, 0, 0)
+        armorBarBG.AlwaysOnTop = true
+        local armorFrame = Instance.new("Frame")
+        armorFrame.Parent = armorBarBG
+        armorFrame.Size = UDim2.new(1, 0, 1, 0)
+        armorFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 40)
+        armorFrame.BorderSizePixel = 0
+        local armorBarFill = Instance.new("Frame")
+        armorBarFill.Name = "Fill"
+        armorBarFill.Parent = armorFrame
+        armorBarFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+        armorBarFill.BorderSizePixel = 0
+        armorBarFill.Size = UDim2.new(1, 0, 1, 0)
+        armorBarFill.AnchorPoint = Vector2.new(0, 1)
+        armorBarFill.Position = UDim2.new(0, 0, 1, 0)
         local updateConnection
         updateConnection = RunService.Heartbeat:Connect(function()
-            if not Settings.ESPEnabled or not player.Character or not LocalPlayer.Character or not highlight.Parent then
+            if (not Settings.ESPEnabled and not Settings.ESPV2Enabled) or not player.Character or not LocalPlayer.Character then
                 if updateConnection then updateConnection:Disconnect() end
                 return
             end
+            local isTeammate = Settings.ESPTeamCheck and player.Team == LocalPlayer.Team
+            if isTeammate then
+                billboardGui.Enabled = false
+                healthBarBG.Enabled = false
+                armorBarBG.Enabled = false
+                if highlight then highlight.Enabled = false end
+                return
+            else
+                billboardGui.Enabled = true
+                healthBarBG.Enabled = Settings.ESPV2Enabled
+                armorBarBG.Enabled = Settings.ESPV2Enabled
+                if highlight then highlight.Enabled = true end
+            end
+            local char = player.Character
+            local hum = char:FindFirstChild("Humanoid")
             local localHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local playerHRP = player.Character:FindFirstChild("HumanoidRootPart")
+            local playerHRP = char:FindFirstChild("HumanoidRootPart")
+            if hum then
+                local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                healthBarFill.Size = UDim2.new(1, 0, healthPercent, 0)
+                healthBarFill.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1)
+                local curArmor, maxArmor = 0, 100
+                local armorVal = char:FindFirstChild("Armor") or char:FindFirstChild("Shield") or hum:FindFirstChild("Armor") or hum:FindFirstChild("Shield") or player:FindFirstChild("Armor") or player:FindFirstChild("Shield")
+                if armorVal and (armorVal:IsA("ValueBase")) then
+                    curArmor = tonumber(armorVal.Value) or 0
+                    maxArmor = tonumber(armorVal:GetAttribute("MaxArmor") or armorVal:GetAttribute("MaxShield")) or 100
+                else
+                    curArmor = char:GetAttribute("Armor") or char:GetAttribute("Shield") or hum:GetAttribute("Armor") or hum:GetAttribute("Shield") or player:GetAttribute("Armor") or player:GetAttribute("Shield") or 0
+                    maxArmor = char:GetAttribute("MaxArmor") or char:GetAttribute("MaxShield") or hum:GetAttribute("MaxArmor") or hum:GetAttribute("MaxShield") or player:GetAttribute("MaxArmor") or player:GetAttribute("MaxShield") or 100
+                end
+                if curArmor and tonumber(curArmor) and tonumber(curArmor) > 0 then
+                    armorBarBG.Enabled = Settings.ESPV2Enabled
+                    local armorPercent = math.clamp(tonumber(curArmor) / tonumber(maxArmor), 0, 1)
+                    armorBarFill.Size = UDim2.new(1, 0, armorPercent, 0)
+                else
+                    armorBarBG.Enabled = false
+                end
+            end
             if localHRP and playerHRP then
                 local distance = math.floor((localHRP.Position - playerHRP.Position).Magnitude)
                 distanceLabel.Text = distance .. " studs"
@@ -1590,6 +1682,8 @@ local function createESP(player)
         if not espConnections[player] then espConnections[player] = {} end
         espConnections[player].highlight = highlight
         espConnections[player].billboard = billboardGui
+        espConnections[player].healthBar = healthBarBG
+        espConnections[player].armorBar = armorBarBG
         espConnections[player].update = updateConnection
     end
     if player.Character then
@@ -1603,35 +1697,44 @@ local function createESP(player)
     espConnections[player].charConn = charConn
 end
 local function enableESP()
-    if not Settings.ESPEnabled then return end
+    if not Settings.ESPEnabled and not Settings.ESPV2Enabled then return end
     for _, player in pairs(Players:GetPlayers()) do
         createESP(player)
     end
-    espConnections.playerAdded = Players.PlayerAdded:Connect(function(player)
-        createESP(player)
-    end)
-    espConnections.playerRemoving = Players.PlayerRemoving:Connect(function(player)
-        if espConnections[player] then
-            if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
-            if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
-            if espConnections[player].update then espConnections[player].update:Disconnect() end
-            if espConnections[player].charConn then espConnections[player].charConn:Disconnect() end
-            espConnections[player] = nil
-        end
-    end)
+    if not espConnections.playerAdded then
+        espConnections.playerAdded = Players.PlayerAdded:Connect(function(player)
+            createESP(player)
+        end)
+    end
+    if not espConnections.playerRemoving then
+        espConnections.playerRemoving = Players.PlayerRemoving:Connect(function(player)
+            if espConnections[player] then
+                if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
+                if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
+                if espConnections[player].update then espConnections[player].update:Disconnect() end
+                if espConnections[player].charConn then espConnections[player].charConn:Disconnect() end
+                espConnections[player] = nil
+            end
+        end)
+    end
 end
 local function disableESP()
-    if espConnections.playerAdded then espConnections.playerAdded:Disconnect() espConnections.playerAdded = nil end
-    if espConnections.playerRemoving then espConnections.playerRemoving:Disconnect() espConnections.playerRemoving = nil end
+    if not Settings.ESPEnabled and not Settings.ESPV2Enabled then
+        if espConnections.playerAdded then espConnections.playerAdded:Disconnect() espConnections.playerAdded = nil end
+        if espConnections.playerRemoving then espConnections.playerRemoving:Disconnect() espConnections.playerRemoving = nil end
+    end
     for player, data in pairs(espConnections) do
         if type(player) == "userdata" then
             if data.highlight then data.highlight:Destroy() end
             if data.billboard then data.billboard:Destroy() end
+            if data.healthBar then data.healthBar:Destroy() end
+            if data.armorBar then data.armorBar:Destroy() end
             if data.update then data.update:Disconnect() end
-            if data.charConn then data.charConn:Disconnect() end
+            if not Settings.ESPEnabled and not Settings.ESPV2Enabled then
+                if data.charConn then data.charConn:Disconnect() end
+            end
         end
     end
-    espConnections = {}
 end
 local function SaveOriginalLighting()
     if not Settings.OriginalValuesSaved then
@@ -1679,28 +1782,42 @@ local function RestoreOriginalLighting()
         end
     end
 end
+local FullbrightConnection = nil
 local function SetFullbright(enable)
+    Settings.FullbrightEnabled = enable
     if enable then
         SaveOriginalLighting()
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 14
-        Lighting.FogEnd = 1000000
-        Lighting.FogStart = 0
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
-        if atmosphere then
-            atmosphere.Density = 0
-            atmosphere.Offset = 0
-            atmosphere.Haze = 0
-            atmosphere.Glare = 0
-        end
-        for _, effect in pairs(Lighting:GetChildren()) do
-            if effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") then
-                effect.Enabled = false
+        if FullbrightConnection then FullbrightConnection:Disconnect() end
+        FullbrightConnection = RunService.Heartbeat:Connect(function()
+            if not Settings.FullbrightEnabled then
+                if FullbrightConnection then FullbrightConnection:Disconnect() end
+                FullbrightConnection = nil
+                return
             end
-        end
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 1000000
+            Lighting.FogStart = 0
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+            local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+            if atmosphere then
+                atmosphere.Density = 0
+                atmosphere.Offset = 0
+                atmosphere.Haze = 0
+                atmosphere.Glare = 0
+            end
+            for _, effect in pairs(Lighting:GetChildren()) do
+                if effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") then
+                    effect.Enabled = false
+                end
+            end
+        end)
     else
+        if FullbrightConnection then
+            FullbrightConnection:Disconnect()
+            FullbrightConnection = nil
+        end
         RestoreOriginalLighting()
     end
 end
@@ -1827,7 +1944,8 @@ local function SaveConfig()
         "NoClipEnabled", "InfiniteJumpEnabled", "ESPEnabled",
         "TouchFlingEnabled", "AntiFlingEnabled", "InstantInteractEnabled", "ClickToFlingEnabled",
         "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled", "ESPTeamCheck", "AutoRespawnTPEnabled",
-        "HitboxExpanderEnabled", "HitboxSize", "HitboxTeamCheck", "WalkOnWaterEnabled", "FreecamEnabled", "FreecamSpeed"
+        "HitboxExpanderEnabled", "HitboxSize", "HitboxTeamCheck", "HitboxIgnoreList", "WalkOnWaterEnabled", "FreecamEnabled", "FreecamSpeed",
+        "MapCleanerEnabled", "FPSBoosterEnabled", "ESPV2Enabled"
     }
     for _, key in pairs(SaveableKeys) do
         ConfigData[key] = Settings[key]
@@ -1858,7 +1976,7 @@ local function LoadConfig()
                 SetupInfiniteJump()
                 ToggleAntiAFK(Settings.AntiAFKEnabled)
                 SetupTPWalk()
-                if Settings.ESPEnabled then enableESP() else disableESP() end
+                if Settings.ESPEnabled or Settings.ESPV2Enabled then enableESP() else disableESP() end
                 ToggleFly(Settings.FlyEnabled)
                 ToggleFling(Settings.TouchFlingEnabled)
                 ToggleAntiFling(Settings.AntiFlingEnabled)
@@ -1870,6 +1988,7 @@ local function LoadConfig()
                 ToggleHitboxExpander(Settings.HitboxExpanderEnabled)
                 ToggleWalkOnWater(Settings.WalkOnWaterEnabled)
                 ToggleFreecam(Settings.FreecamEnabled)
+                ToggleFPSBooster(Settings.FPSBoosterEnabled)
             end)
             return true
         end
@@ -1880,7 +1999,7 @@ local Window = Library:CreateWindow({
     Name = "Diablo Hub Merry Christmas"
 })
 Window:Section("Fling Control 🌪️")
-Window:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
+UIElements.TouchFlingEnabled = Window:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
     ToggleFling(state)
 end)
 UIElements.ClickToFlingEnabled = Window:Toggle("Click-to-Fling 🎯", Settings.ClickToFlingEnabled, function(state)
@@ -1961,8 +2080,16 @@ Window:Button("TP to Last Death 💀", function()
     TeleportToLastDeath()
 end)
 Window:Section("Visuals & Camera 👁️")
-UIElements.ESPEnabled = Window:Toggle("ESP 👁️", Settings.ESPEnabled, function(state)
+UIElements.ESPEnabled = Window:Toggle("ESP V1 👁️", Settings.ESPEnabled, function(state)
     Settings.ESPEnabled = state
+    if state then
+        enableESP()
+    else
+        disableESP()
+    end
+end)
+UIElements.ESPV2Enabled = Window:Toggle("ESP V2 🛰️", Settings.ESPV2Enabled, function(state)
+    Settings.ESPV2Enabled = state
     if state then
         enableESP()
     else
@@ -2020,6 +2147,9 @@ UIElements.FullbrightEnabled = Window:Toggle("Fullbright ☀️", Settings.Fullb
 end)
 UIElements.FPSBoosterEnabled = Window:Toggle("FPS Booster ⚡", Settings.FPSBoosterEnabled, function(state)
     ToggleFPSBooster(state)
+end)
+Window:Button("Deep Map Clean 🧹", function()
+    ToggleMapCleaner()
 end)
 Window:Section("Server & System ⚙️")
 UIElements.AntiAFKEnabled = Window:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
