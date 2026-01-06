@@ -753,7 +753,7 @@ function Library:CreateWindow(ArgSettings)
         MainButton.MouseButton1Click:Connect(function()
             Toggled = not Toggled
             local TargetSize = Toggled and UDim2.new(1, 0, 0, 40 + (#OptionsContainer:GetChildren() - 1) * 30) or UDim2.new(1, 0, 0, 40)
-            if Toggled and Text:find("Player") then
+            if Toggled and (Text:find("Player") or Text:find("Ally")) then
                 local options = {}
                 for _, p in pairs(Players:GetPlayers()) do
                     if p == LocalPlayer then continue end
@@ -771,9 +771,18 @@ function Library:CreateWindow(ArgSettings)
                             end
                         end
                     end
+                    local isAlly = false
+                    if Text:find("Ally") then
+                        for _, ally in pairs(Settings.AllyNames or {}) do
+                            if p.Name == ally then
+                                isAlly = true
+                                break
+                            end
+                        end
+                    end
                     table.insert(options, {
                         Value = p.Name,
-                        Display = (isIgnored and "🚫 " or "") .. p.Name
+                        Display = (isIgnored and "🚫 " or "") .. (isAlly and "🛡️ " or "") .. p.Name
                     })
                 end
                 RefreshOptions(options)
@@ -819,6 +828,7 @@ Settings = {
     HitboxTeamCheck = false,
     HitboxIgnoreList = {},
     WhitelistNames = {"pondthzaza0", "kaitunpond43", "pond4925"},
+    AllyNames = {"kaitunpond44", "gumilk254300", "your0nlywin", "pondthzaza0", "pond4925"},
     WalkOnWaterEnabled = false,
     MapCleanerEnabled = false,
     FreecamEnabled = false,
@@ -1550,8 +1560,7 @@ local function createESP(player)
         if espConnections[player] then
             if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
             if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
-            if espConnections[player].healthBar then espConnections[player].healthBar:Destroy() end
-            if espConnections[player].armorBar then espConnections[player].armorBar:Destroy() end
+            if espConnections[player].box then espConnections[player].box:Destroy() end
             if espConnections[player].update then espConnections[player].update:Disconnect() end
         end
         local highlight = nil
@@ -1567,69 +1576,72 @@ local function createESP(player)
         local billboardGui = Instance.new("BillboardGui")
         billboardGui.Name = "ESPInfo"
         billboardGui.Parent = humanoidRootPart
-        billboardGui.Size = UDim2.new(0, 100, 0, 40)
-        billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+        billboardGui.Size = UDim2.new(0, 120, 0, 40)
+        billboardGui.StudsOffset = Vector3.new(0, 8, 0)
         billboardGui.AlwaysOnTop = true
         billboardGui.ClipsDescendants = false
+        local mainFrame = Instance.new("Frame")
+        mainFrame.Parent = billboardGui
+        mainFrame.Size = UDim2.new(1, 0, 0.6, 0)
+        mainFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+        mainFrame.BorderSizePixel = 0
         local nameLabel = Instance.new("TextLabel")
-        nameLabel.Parent = billboardGui
-        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        nameLabel.Parent = mainFrame
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = player.Name
+        nameLabel.Text = player.Name .. "-0"
         nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         nameLabel.TextScaled = true
-        nameLabel.Font = Config.Font
-        nameLabel.TextStrokeTransparency = 0
-        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        local distanceLabel = Instance.new("TextLabel")
-        distanceLabel.Parent = billboardGui
-        distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
-        distanceLabel.Position = UDim2.new(0, 0, 0.5, 0)
-        distanceLabel.BackgroundTransparency = 1
-        distanceLabel.Text = "0 studs"
-        distanceLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-        distanceLabel.TextScaled = true
-        distanceLabel.Font = Config.FontRegular
-        distanceLabel.TextStrokeTransparency = 0
-        distanceLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        local healthBarBG = Instance.new("BillboardGui")
-        healthBarBG.Name = "HealthBar"
-        healthBarBG.Parent = humanoidRootPart
-        healthBarBG.Size = UDim2.new(0.2, 0, 2.5, 0)
-        healthBarBG.StudsOffset = Vector3.new(-1.8, 0, 0)
-        healthBarBG.AlwaysOnTop = true
-        local healthFrame = Instance.new("Frame")
-        healthFrame.Parent = healthBarBG
-        healthFrame.Size = UDim2.new(1, 0, 1, 0)
-        healthFrame.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
-        healthFrame.BorderSizePixel = 0
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextStrokeTransparency = 1
+        local v2Extras = Instance.new("Frame")
+        v2Extras.Name = "V2Extras"
+        v2Extras.Parent = billboardGui
+        v2Extras.Size = UDim2.new(1, 0, 1, 0)
+        v2Extras.BackgroundTransparency = 1
+        local healthBarBG = Instance.new("Frame")
+        healthBarBG.Name = "HealthBG"
+        healthBarBG.Parent = v2Extras
+        healthBarBG.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        healthBarBG.BorderSizePixel = 0
+        healthBarBG.Position = UDim2.new(0, 0, 0.65, 0)
+        healthBarBG.Size = UDim2.new(1, 0, 0.15, 0)
         local healthBarFill = Instance.new("Frame")
         healthBarFill.Name = "Fill"
-        healthBarFill.Parent = healthFrame
-        healthBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        healthBarFill.Parent = healthBarBG
+        healthBarFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         healthBarFill.BorderSizePixel = 0
         healthBarFill.Size = UDim2.new(1, 0, 1, 0)
-        healthBarFill.AnchorPoint = Vector2.new(0, 1)
-        healthBarFill.Position = UDim2.new(0, 0, 1, 0)
-        local armorBarBG = Instance.new("BillboardGui")
-        armorBarBG.Name = "ArmorBar"
-        armorBarBG.Parent = humanoidRootPart
-        armorBarBG.Size = UDim2.new(0.2, 0, 2.5, 0)
-        armorBarBG.StudsOffset = Vector3.new(1.8, 0, 0)
-        armorBarBG.AlwaysOnTop = true
-        local armorFrame = Instance.new("Frame")
-        armorFrame.Parent = armorBarBG
-        armorFrame.Size = UDim2.new(1, 0, 1, 0)
-        armorFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 40)
-        armorFrame.BorderSizePixel = 0
-        local armorBarFill = Instance.new("Frame")
-        armorBarFill.Name = "Fill"
-        armorBarFill.Parent = armorFrame
-        armorBarFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-        armorBarFill.BorderSizePixel = 0
-        armorBarFill.Size = UDim2.new(1, 0, 1, 0)
-        armorBarFill.AnchorPoint = Vector2.new(0, 1)
-        armorBarFill.Position = UDim2.new(0, 0, 1, 0)
+        local function createCorner(parent, pos, size, color)
+            local corner = Instance.new("Frame")
+            corner.Parent = parent
+            corner.Size = size
+            corner.Position = pos
+            corner.BackgroundColor3 = color
+            corner.BorderSizePixel = 0
+            return corner
+        end
+        local accentColor = Color3.fromRGB(255, 50, 255)
+        createCorner(v2Extras, UDim2.new(0, -3, 0, -3), UDim2.new(0, 12, 0, 2), accentColor)
+        createCorner(v2Extras, UDim2.new(0, -3, 0, -3), UDim2.new(0, 2, 0, 12), accentColor)
+        createCorner(v2Extras, UDim2.new(1, -9, 0, -3), UDim2.new(0, 12, 0, 2), accentColor)
+        createCorner(v2Extras, UDim2.new(1, 1, 0, -3), UDim2.new(0, 2, 0, 12), accentColor)
+        local boxGui = Instance.new("BillboardGui")
+        boxGui.Name = "ESPBox"
+        boxGui.Parent = humanoidRootPart
+        boxGui.Size = UDim2.new(6, 0, 8, 0)
+        boxGui.AlwaysOnTop = true
+        boxGui.ClipsDescendants = false
+        local mainBox = Instance.new("Frame")
+        mainBox.Parent = boxGui
+        mainBox.Size = UDim2.new(1, 0, 1, 0)
+        mainBox.BackgroundTransparency = 1
+        mainBox.BorderSizePixel = 0
+        local boxStroke = Instance.new("UIStroke")
+        boxStroke.Parent = mainBox
+        boxStroke.Color = Color3.fromRGB(0, 255, 255)
+        boxStroke.Thickness = 1.5
+        boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         local updateConnection
         updateConnection = RunService.Heartbeat:Connect(function()
             if (not Settings.ESPEnabled and not Settings.ESPV2Enabled) or not player.Character or not LocalPlayer.Character then
@@ -1639,15 +1651,14 @@ local function createESP(player)
             local isTeammate = Settings.ESPTeamCheck and player.Team == LocalPlayer.Team
             if isTeammate then
                 billboardGui.Enabled = false
-                healthBarBG.Enabled = false
-                armorBarBG.Enabled = false
+                boxGui.Enabled = false
                 if highlight then highlight.Enabled = false end
                 return
             else
-                billboardGui.Enabled = true
-                healthBarBG.Enabled = Settings.ESPV2Enabled
-                armorBarBG.Enabled = Settings.ESPV2Enabled
-                if highlight then highlight.Enabled = true end
+                billboardGui.Enabled = Settings.ESPEnabled or Settings.ESPV2Enabled
+                v2Extras.Visible = Settings.ESPV2Enabled
+                boxGui.Enabled = Settings.ESPV2Enabled
+                if highlight then highlight.Enabled = Settings.ESPEnabled end
             end
             local char = player.Character
             local hum = char:FindFirstChild("Humanoid")
@@ -1655,35 +1666,52 @@ local function createESP(player)
             local playerHRP = char:FindFirstChild("HumanoidRootPart")
             if hum then
                 local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                healthBarFill.Size = UDim2.new(1, 0, healthPercent, 0)
-                healthBarFill.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1)
-                local curArmor, maxArmor = 0, 100
-                local armorVal = char:FindFirstChild("Armor") or char:FindFirstChild("Shield") or hum:FindFirstChild("Armor") or hum:FindFirstChild("Shield") or player:FindFirstChild("Armor") or player:FindFirstChild("Shield")
-                if armorVal and (armorVal:IsA("ValueBase")) then
-                    curArmor = tonumber(armorVal.Value) or 0
-                    maxArmor = tonumber(armorVal:GetAttribute("MaxArmor") or armorVal:GetAttribute("MaxShield")) or 100
-                else
-                    curArmor = char:GetAttribute("Armor") or char:GetAttribute("Shield") or hum:GetAttribute("Armor") or hum:GetAttribute("Shield") or player:GetAttribute("Armor") or player:GetAttribute("Shield") or 0
-                    maxArmor = char:GetAttribute("MaxArmor") or char:GetAttribute("MaxShield") or hum:GetAttribute("MaxArmor") or hum:GetAttribute("MaxShield") or player:GetAttribute("MaxArmor") or player:GetAttribute("MaxShield") or 100
-                end
-                if curArmor and tonumber(curArmor) and tonumber(curArmor) > 0 then
-                    armorBarBG.Enabled = Settings.ESPV2Enabled
-                    local armorPercent = math.clamp(tonumber(curArmor) / tonumber(maxArmor), 0, 1)
-                    armorBarFill.Size = UDim2.new(1, 0, armorPercent, 0)
-                else
-                    armorBarBG.Enabled = false
-                end
+                healthBarFill.Size = UDim2.new(healthPercent, 0, 1, 0)
             end
             if localHRP and playerHRP then
                 local distance = math.floor((localHRP.Position - playerHRP.Position).Magnitude)
-                distanceLabel.Text = distance .. " studs"
+                nameLabel.Text = player.Name .. "-" .. distance
+                
+                local isAlly = false
+                for _, allyName in pairs(Settings.AllyNames) do
+                    if player.Name == allyName then
+                        isAlly = true
+                        break
+                    end
+                end
+
+                local statusColor = Color3.fromRGB(0, 255, 255)
+                if not isAlly then
+                    if distance < 300 then
+                        statusColor = Color3.fromRGB(255, 50, 50)
+                        local pulse = (math.sin(tick() * 10) + 1) / 2
+                        boxStroke.Thickness = 1.5 + (pulse * 1.5)
+                    elseif distance < 600 then
+                        statusColor = Color3.fromRGB(255, 200, 50)
+                        boxStroke.Thickness = 1.5
+                    elseif distance < 1200 then
+                        statusColor = Color3.fromRGB(0, 255, 255)
+                        boxStroke.Thickness = 1.5
+                    else
+                        -- Beyond safe range, keep it cyan but maybe more transparent? 
+                        -- For now, user just asked for these ranges.
+                        statusColor = Color3.fromRGB(150, 150, 150) -- Faded for very far
+                        boxStroke.Thickness = 1
+                    end
+                else
+                    -- Allies are always Green/Clean
+                    statusColor = Color3.fromRGB(0, 255, 100)
+                    boxStroke.Thickness = 1.5
+                end
+                
+                boxStroke.Color = statusColor
+                nameLabel.TextColor3 = statusColor
             end
         end)
         if not espConnections[player] then espConnections[player] = {} end
         espConnections[player].highlight = highlight
         espConnections[player].billboard = billboardGui
-        espConnections[player].healthBar = healthBarBG
-        espConnections[player].armorBar = armorBarBG
+        espConnections[player].box = boxGui
         espConnections[player].update = updateConnection
     end
     if player.Character then
@@ -1711,6 +1739,7 @@ local function enableESP()
             if espConnections[player] then
                 if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
                 if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
+                if espConnections[player].box then espConnections[player].box:Destroy() end
                 if espConnections[player].update then espConnections[player].update:Disconnect() end
                 if espConnections[player].charConn then espConnections[player].charConn:Disconnect() end
                 espConnections[player] = nil
@@ -1727,8 +1756,7 @@ local function disableESP()
         if type(player) == "userdata" then
             if data.highlight then data.highlight:Destroy() end
             if data.billboard then data.billboard:Destroy() end
-            if data.healthBar then data.healthBar:Destroy() end
-            if data.armorBar then data.armorBar:Destroy() end
+            if data.box then data.box:Destroy() end
             if data.update then data.update:Disconnect() end
             if not Settings.ESPEnabled and not Settings.ESPV2Enabled then
                 if data.charConn then data.charConn:Disconnect() end
@@ -1945,7 +1973,7 @@ local function SaveConfig()
         "TouchFlingEnabled", "AntiFlingEnabled", "InstantInteractEnabled", "ClickToFlingEnabled",
         "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled", "ESPTeamCheck", "AutoRespawnTPEnabled",
         "HitboxExpanderEnabled", "HitboxSize", "HitboxTeamCheck", "HitboxIgnoreList", "WalkOnWaterEnabled", "FreecamEnabled", "FreecamSpeed",
-        "MapCleanerEnabled", "FPSBoosterEnabled", "ESPV2Enabled"
+        "MapCleanerEnabled", "FPSBoosterEnabled", "ESPV2Enabled", "AllyNames"
     }
     for _, key in pairs(SaveableKeys) do
         ConfigData[key] = Settings[key]
@@ -2098,10 +2126,42 @@ UIElements.ESPV2Enabled = Window:Toggle("ESP V2 🛰️", Settings.ESPV2Enabled,
 end)
 UIElements.ESPTeamCheck = Window:Toggle("ESP Team Check 🛡️", Settings.ESPTeamCheck, function(state)
     Settings.ESPTeamCheck = state
-    if Settings.ESPEnabled then
+    if Settings.ESPEnabled or Settings.ESPV2Enabled then
         disableESP()
         enableESP()
     end
+end)
+Window:Dropdown("Ally Management 🛡️", {}, function(selected)
+    local foundIdx = nil
+    for i, name in ipairs(Settings.AllyNames) do
+        if name == selected then
+            foundIdx = i
+            break
+        end
+    end
+    if foundIdx then
+        table.remove(Settings.AllyNames, foundIdx)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Ally System",
+            Text = selected .. " removed from Allies.",
+            Duration = 3
+        })
+    else
+        table.insert(Settings.AllyNames, selected)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Ally System",
+            Text = selected .. " added to Allies.",
+            Duration = 3
+        })
+    end
+end)
+Window:Button("Clear Ally List 🗑️", function()
+    Settings.AllyNames = {}
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Ally System",
+        Text = "Ally list cleared!",
+        Duration = 3
+    })
 end)
 UIElements.FreecamEnabled = Window:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
     ToggleFreecam(state)
