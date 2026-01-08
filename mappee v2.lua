@@ -65,12 +65,12 @@ end)
 local Library = {}
 local Config = {
     Colors = {
-        Main = Color3.fromRGB(24, 24, 32),
-        Secondary = Color3.fromRGB(32, 32, 42),
-        Accent = Color3.fromRGB(220, 60, 60),
-        Text = Color3.fromRGB(255, 255, 255),
-        TextDark = Color3.fromRGB(180, 180, 180),
-        Green = Color3.fromRGB(46, 139, 87)
+        Main = Color3.fromRGB(10, 10, 12), -- Deep Abyss
+        Secondary = Color3.fromRGB(18, 18, 22), -- Dark Steel
+        Accent = Color3.fromRGB(200, 0, 0), -- Pure Demon Red
+        Text = Color3.fromRGB(225, 225, 225), -- Ghostly Silver
+        TextDark = Color3.fromRGB(120, 120, 120),
+        Green = Color3.fromRGB(100, 255, 100)
     },
     Font = Enum.Font.GothamBold,
     FontRegular = Enum.Font.Gotham
@@ -135,9 +135,9 @@ local function CreateRipple(Button)
     end)
 end
 function Library:CreateWindow(ArgSettings)
-    local TitleName = ArgSettings.Name or "Christmas Hub"
+    local TitleName = ArgSettings.Name or "Diablo Hub"
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "ChristmasPremium"
+    ScreenGui.Name = "DeathAngelUI"
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     if syn and syn.protect_gui then
         syn.protect_gui(ScreenGui)
@@ -155,9 +155,29 @@ function Library:CreateWindow(ArgSettings)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.Size = UDim2.new(0, 0, 0, 0)
     local MainCorner = Instance.new("UICorner")
-    MainCorner.CornerRadius = UDim.new(0, 12)
+    MainCorner.CornerRadius = UDim.new(0, 0) -- Sharp Edge
     MainCorner.Parent = Main
     local Shadow = Instance.new("ImageLabel")
+    local MainGradient = Instance.new("UIGradient")
+    MainGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Config.Colors.Main),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 10, 10)) -- Hellfire Bottom
+    })
+    MainGradient.Rotation = 90
+    MainGradient.Parent = Main
+
+    local Texture = Instance.new("ImageLabel")
+    Texture.Name = "Texture"
+    Texture.Parent = Main
+    Texture.BackgroundTransparency = 1
+    Texture.Position = UDim2.new(0,0,0,0)
+    Texture.Size = UDim2.new(1, 0, 1, 0)
+    Texture.ZIndex = 1 -- Behind text, above bg color? Main BG is color. ZIndex 1 is fine.
+    Texture.Image = "rbxassetid://4801855024"
+    Texture.ImageColor3 = Color3.fromRGB(255,255,255)
+    Texture.ImageTransparency = 0.92
+    Texture.TileSize = UDim2.new(0, 100, 0, 100)
+    Texture.ScaleType = Enum.ScaleType.Tile
     Shadow.Name = "Shadow"
     Shadow.Parent = Main
     Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -167,39 +187,44 @@ function Library:CreateWindow(ArgSettings)
     Shadow.Size = UDim2.new(1, 40, 1, 40)
     Shadow.ZIndex = 0
     Shadow.Image = "rbxassetid://5554236805"
-    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    Shadow.ImageTransparency = 0.400
+    Shadow.ImageColor3 = Config.Colors.Accent -- Demonic Glow
+    Shadow.ImageTransparency = 0.2 -- Intense Glow
     Shadow.ScaleType = Enum.ScaleType.Slice
     Shadow.SliceCenter = Rect.new(23, 23, 277, 277)
     TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 600, 0, 400)}):Play()
     task.spawn(function()
-        local SnowContainer = Instance.new("Frame")
-        SnowContainer.Name = "SnowContainer"
-        SnowContainer.Parent = Main
-        SnowContainer.BackgroundTransparency = 1
-        SnowContainer.Size = UDim2.new(1, 0, 1, 0)
-        SnowContainer.ZIndex = 20
-        SnowContainer.ClipsDescendants = true
+        local VoidContainer = Instance.new("Frame")
+        VoidContainer.Name = "VoidContainer"
+        VoidContainer.Parent = Main
+        VoidContainer.BackgroundTransparency = 1
+        VoidContainer.Size = UDim2.new(1, 0, 1, 0)
+        VoidContainer.ZIndex = 0
+        VoidContainer.ClipsDescendants = true
+        
         while Main.Parent do
-            local Snow = Instance.new("Frame")
-            Snow.Parent = SnowContainer
-            Snow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Snow.BorderSizePixel = 0
-            Snow.Size = UDim2.new(0, math.random(2,5), 0, math.random(2,5))
-            Snow.Position = UDim2.new(math.random(0,100)/100, 0, -0.1, 0)
-            Snow.BackgroundTransparency = math.random(30,80)/100
-            local Corner = Instance.new("UICorner")
-            Corner.CornerRadius = UDim.new(1,0)
-            Corner.Parent = Snow
-            local FallSpeed = math.random(3,8)
-            local Sway = math.random(-50,50)
-            local Tween = TweenService:Create(Snow, TweenInfo.new(FallSpeed, Enum.EasingStyle.Linear), {
-                Position = UDim2.new(Snow.Position.X.Scale, Sway, 1.1, 0),
-                BackgroundTransparency = 1
+            local Ember = Instance.new("Frame")
+            Ember.Parent = VoidContainer
+            local redVal = math.random(150, 255)
+            Ember.BackgroundColor3 = Color3.fromRGB(redVal, math.random(0, 50), 0) -- Varying fire colors
+            Ember.BorderSizePixel = 0
+            local size = math.random(2, 5)
+            Ember.Size = UDim2.new(0, size, 0, size)
+            -- Start from bottom, random X
+            Ember.Position = UDim2.new(math.random(0,100)/100, 0, 1.1, 0)
+            Ember.BackgroundTransparency = math.random(2, 5)/10
+            
+            -- Sharp particles
+            local RiseSpeed = math.random(2, 6)
+            local Sway = math.random(-20, 20)
+            
+            local Tween = TweenService:Create(Ember, TweenInfo.new(RiseSpeed, Enum.EasingStyle.Linear), {
+                Position = UDim2.new(Ember.Position.X.Scale, Sway, -0.2, 0),
+                BackgroundTransparency = 1,
+                Rotation = math.random(-360, 360)
             })
             Tween:Play()
-            game:GetService("Debris"):AddItem(Snow, FallSpeed)
-            task.wait(math.random(1,5)/10)
+            game:GetService("Debris"):AddItem(Ember, RiseSpeed)
+            task.wait(math.random(1, 5)/30) -- Rapid spawn
         end
     end)
     local Topbar = Instance.new("Frame")
@@ -209,7 +234,7 @@ function Library:CreateWindow(ArgSettings)
     Topbar.BorderSizePixel = 0
     Topbar.Size = UDim2.new(1, 0, 0, 45)
     local TopbarCorner = Instance.new("UICorner")
-    TopbarCorner.CornerRadius = UDim.new(0, 12)
+    TopbarCorner.CornerRadius = UDim.new(0, 0) -- Sharp
     TopbarCorner.Parent = Topbar
     local TopbarFix = Instance.new("Frame")
     TopbarFix.Name = "Fix"
@@ -334,28 +359,95 @@ function Library:CreateWindow(ArgSettings)
         ScreenGui:Destroy()
     end)
     MakeDraggable(Topbar, Main)
-    local Container = Instance.new("ScrollingFrame")
-    Container.Name = "Container"
-    Container.Parent = Main
-    Container.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Container.BackgroundTransparency = 1.000
-    Container.Position = UDim2.new(0, 15, 0, 60)
-    Container.Size = UDim2.new(1, -30, 1, -75)
-    Container.ScrollBarThickness = 4
-    Container.ScrollBarImageColor3 = Config.Colors.Accent
-    Container.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    Container.CanvasSize = UDim2.new(0, 0, 0, 0)
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Parent = Container
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 8)
-    local UIPadding = Instance.new("UIPadding")
-    UIPadding.Parent = Container
-    UIPadding.PaddingBottom = UDim.new(0, 10)
-    UIPadding.PaddingLeft = UDim.new(0, 4)
-    UIPadding.PaddingRight = UDim.new(0, 4)
-    UIPadding.PaddingTop = UDim.new(0, 4)
-    local Elements = {}
+    -- Tabs Container within Main
+    local TabContainer = Instance.new("ScrollingFrame")
+    TabContainer.Name = "TabContainer"
+    TabContainer.Parent = Main
+    TabContainer.BackgroundColor3 = Config.Colors.Secondary
+    TabContainer.BackgroundTransparency = 1
+    TabContainer.Position = UDim2.new(0, 15, 0, 55)
+    TabContainer.Size = UDim2.new(1, -30, 0, 35)
+    TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    TabContainer.ScrollBarThickness = 0
+    TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.X
+    
+    local TabListLayout = Instance.new("UIListLayout")
+    TabListLayout.Parent = TabContainer
+    TabListLayout.FillDirection = Enum.FillDirection.Horizontal
+    TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TabListLayout.Padding = UDim.new(0, 5)
+
+    -- Page Container
+    local PageHolder = Instance.new("Frame")
+    PageHolder.Name = "PageHolder"
+    PageHolder.Parent = Main
+    PageHolder.BackgroundTransparency = 1
+    PageHolder.Position = UDim2.new(0, 15, 0, 100)
+    PageHolder.Size = UDim2.new(1, -30, 1, -115)
+    
+    local FirstTab = true
+    local Tabs = {}
+    
+    function Library:Tab(Name)
+        -- Tab Button
+        local TabButton = Instance.new("TextButton")
+        TabButton.Name = Name .. "Tab"
+        TabButton.Parent = TabContainer
+        TabButton.BackgroundColor3 = Config.Colors.Secondary
+        TabButton.Size = UDim2.new(0, 0, 1, 0)
+        TabButton.AutomaticSize = Enum.AutomaticSize.X
+        TabButton.Font = Config.Font
+        TabButton.Text = "  " .. Name .. "  "
+        TabButton.TextColor3 = FirstTab and Config.Colors.Accent or Config.Colors.TextDark
+        TabButton.TextSize = 14
+        TabButton.AutoButtonColor = false
+        
+        local TabCorner = Instance.new("UICorner")
+        TabCorner.CornerRadius = UDim.new(0, 0) -- Sharp
+        TabCorner.Parent = TabButton
+        
+        -- Page ScrollFrame
+        local Container = Instance.new("ScrollingFrame")
+        Container.Name = Name .. "Page"
+        Container.Parent = PageHolder
+        Container.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        Container.BackgroundTransparency = 1.000
+        Container.Size = UDim2.new(1, 0, 1, 0)
+        Container.ScrollBarThickness = 4
+        Container.ScrollBarImageColor3 = Config.Colors.Accent
+        Container.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        Container.CanvasSize = UDim2.new(0, 0, 0, 0)
+        Container.Visible = FirstTab
+        
+        if FirstTab then FirstTab = false end
+        
+        local UIListLayout = Instance.new("UIListLayout")
+        UIListLayout.Parent = Container
+        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        UIListLayout.Padding = UDim.new(0, 8)
+        
+        local UIPadding = Instance.new("UIPadding")
+        UIPadding.Parent = Container
+        UIPadding.PaddingBottom = UDim.new(0, 10)
+        UIPadding.PaddingLeft = UDim.new(0, 4)
+        UIPadding.PaddingRight = UDim.new(0, 4)
+        UIPadding.PaddingTop = UDim.new(0, 4)
+
+        -- Tab Selection Logic
+        TabButton.MouseButton1Click:Connect(function()
+            for _, tab in pairs(Tabs) do
+                tab.Button.TextColor3 = Config.Colors.TextDark
+                tab.Page.Visible = false
+                TweenService:Create(tab.Button, TweenInfo.new(0.2), {BackgroundColor3 = Config.Colors.Secondary}):Play()
+            end
+            TabButton.TextColor3 = Config.Colors.Accent
+            Container.Visible = true
+            TweenService:Create(TabButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}):Play()
+        end)
+        
+        table.insert(Tabs, {Button = TabButton, Page = Container})
+
+        local Elements = {}
     function Elements:Section(Text)
         local SectionTitle = Instance.new("TextLabel")
         SectionTitle.Name = "Section"
@@ -799,7 +891,9 @@ function Library:CreateWindow(ArgSettings)
             end
         }
     end
-    return Elements
+        return Elements
+    end
+    return Library -- Return Library here instead of Elements
 end
 Settings = {
     FullbrightEnabled = false,
@@ -827,8 +921,8 @@ Settings = {
     HitboxSize = 2,
     HitboxTeamCheck = false,
     HitboxIgnoreList = {},
-    WhitelistNames = {"pondthzaza0", "kaitunpond43", "pond4925"},
-    AllyNames = {"kaitunpond22", "gumilk254300", "your0nlywin", "pondthzaza0", "pond4925"},
+    WhitelistNames = {"pondthzaza0", "kaitunpond44", "pond4925"},
+    AllyNames = {"kaitunpond44", "gumilk254300", "your0nlywin", "pondthzaza0", "pond4925"},
     WalkOnWaterEnabled = false,
     MapCleanerEnabled = false,
     FreecamEnabled = false,
@@ -1561,6 +1655,7 @@ local function createESP(player)
             if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
             if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
             if espConnections[player].box then espConnections[player].box:Destroy() end
+            if espConnections[player].health then espConnections[player].health:Destroy() end
             if espConnections[player].update then espConnections[player].update:Disconnect() end
         end
         local highlight = nil
@@ -1583,7 +1678,7 @@ local function createESP(player)
         local mainFrame = Instance.new("Frame")
         mainFrame.Parent = billboardGui
         mainFrame.Size = UDim2.new(1, 0, 0.6, 0)
-        mainFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+        mainFrame.BackgroundTransparency = 1
         mainFrame.BorderSizePixel = 0
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Parent = mainFrame
@@ -1591,27 +1686,14 @@ local function createESP(player)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = player.Name .. "-0"
         nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLabel.TextScaled = true
+        nameLabel.TextSize = 12
         nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextStrokeTransparency = 1
+        nameLabel.TextStrokeTransparency = 0
         local v2Extras = Instance.new("Frame")
         v2Extras.Name = "V2Extras"
         v2Extras.Parent = billboardGui
         v2Extras.Size = UDim2.new(1, 0, 1, 0)
         v2Extras.BackgroundTransparency = 1
-        local healthBarBG = Instance.new("Frame")
-        healthBarBG.Name = "HealthBG"
-        healthBarBG.Parent = v2Extras
-        healthBarBG.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        healthBarBG.BorderSizePixel = 0
-        healthBarBG.Position = UDim2.new(0, 0, 0.65, 0)
-        healthBarBG.Size = UDim2.new(1, 0, 0.15, 0)
-        local healthBarFill = Instance.new("Frame")
-        healthBarFill.Name = "Fill"
-        healthBarFill.Parent = healthBarBG
-        healthBarFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        healthBarFill.BorderSizePixel = 0
-        healthBarFill.Size = UDim2.new(1, 0, 1, 0)
         local function createCorner(parent, pos, size, color)
             local corner = Instance.new("Frame")
             corner.Parent = parent
@@ -1637,11 +1719,45 @@ local function createESP(player)
         mainBox.Size = UDim2.new(1, 0, 1, 0)
         mainBox.BackgroundTransparency = 1
         mainBox.BorderSizePixel = 0
+        mainBox.ClipsDescendants = false -- Ensuring no clipping
         local boxStroke = Instance.new("UIStroke")
         boxStroke.Parent = mainBox
         boxStroke.Color = Color3.fromRGB(0, 255, 255)
         boxStroke.Thickness = 1.5
         boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        -- Vertical Health Bar on left
+        local healthGui = Instance.new("BillboardGui")
+        healthGui.Name = "ESPHealth"
+        healthGui.Parent = humanoidRootPart
+        healthGui.Size = UDim2.new(1, 0, 8, 0) -- 1 stud wide, 8 studs high
+        healthGui.StudsOffset = Vector3.new(-7, 0, 0) -- Moved further left (was -4)
+        healthGui.AlwaysOnTop = true
+        healthGui.ClipsDescendants = false
+        
+        local healthBarBG = Instance.new("Frame")
+        healthBarBG.Name = "HealthBG"
+        healthBarBG.Parent = healthGui
+        healthBarBG.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        healthBarBG.BackgroundTransparency = 0.5
+        healthBarBG.BorderSizePixel = 0
+        healthBarBG.Size = UDim2.new(0.5, 0, 1, 0) -- Half stud width
+        healthBarBG.Position = UDim2.new(0.25, 0, 0, 0) -- Centered in billboard
+        
+        local healthBarStroke = Instance.new("UIStroke")
+        healthBarStroke.Parent = healthBarBG
+        healthBarStroke.Color = Color3.fromRGB(0, 0, 0)
+        healthBarStroke.Thickness = 1
+        
+        local healthBarFill = Instance.new("Frame")
+        healthBarFill.Name = "Fill"
+        healthBarFill.Parent = healthBarBG
+        healthBarFill.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        healthBarFill.BorderSizePixel = 0
+        healthBarFill.AnchorPoint = Vector2.new(0, 1)
+        healthBarFill.Position = UDim2.new(0, 0, 1, 0)
+        healthBarFill.Size = UDim2.new(1, 0, 1, 0)
+        
         local updateConnection
         updateConnection = RunService.Heartbeat:Connect(function()
             if (not Settings.ESPEnabled and not Settings.ESPV2Enabled) or not player.Character or not LocalPlayer.Character then
@@ -1652,21 +1768,30 @@ local function createESP(player)
             if isTeammate then
                 billboardGui.Enabled = false
                 boxGui.Enabled = false
+                healthGui.Enabled = false
                 if highlight then highlight.Enabled = false end
                 return
-            else
-                billboardGui.Enabled = Settings.ESPEnabled or Settings.ESPV2Enabled
-                v2Extras.Visible = Settings.ESPV2Enabled
-                boxGui.Enabled = Settings.ESPV2Enabled
-                if highlight then highlight.Enabled = Settings.ESPEnabled end
             end
+
+            -- Force visibility update based on settings
+            local showV1 = Settings.ESPEnabled
+            local showV2 = Settings.ESPV2Enabled
+
+            billboardGui.Enabled = showV1 or showV2
+            v2Extras.Visible = showV2
+            boxGui.Enabled = showV2
+            healthGui.Enabled = showV2 -- Explicit toggle
+            
+            if highlight then highlight.Enabled = showV1 end
             local char = player.Character
-            local hum = char:FindFirstChild("Humanoid")
+            local hum = char:FindFirstChildWhichIsA("Humanoid")
             local localHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             local playerHRP = char:FindFirstChild("HumanoidRootPart")
             if hum then
                 local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                healthBarFill.Size = UDim2.new(healthPercent, 0, 1, 0)
+                healthBarFill.Size = UDim2.new(1, 0, healthPercent, 0)
+                -- Color gradient from Green -> Red
+                healthBarFill.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1) 
             end
             if localHRP and playerHRP then
                 local distance = math.floor((localHRP.Position - playerHRP.Position).Magnitude)
@@ -1712,6 +1837,7 @@ local function createESP(player)
         espConnections[player].highlight = highlight
         espConnections[player].billboard = billboardGui
         espConnections[player].box = boxGui
+        espConnections[player].health = healthGui
         espConnections[player].update = updateConnection
     end
     if player.Character then
@@ -1740,6 +1866,7 @@ local function enableESP()
                 if espConnections[player].highlight then espConnections[player].highlight:Destroy() end
                 if espConnections[player].billboard then espConnections[player].billboard:Destroy() end
                 if espConnections[player].box then espConnections[player].box:Destroy() end
+                if espConnections[player].health then espConnections[player].health:Destroy() end
                 if espConnections[player].update then espConnections[player].update:Disconnect() end
                 if espConnections[player].charConn then espConnections[player].charConn:Disconnect() end
                 espConnections[player] = nil
@@ -1757,6 +1884,7 @@ local function disableESP()
             if data.highlight then data.highlight:Destroy() end
             if data.billboard then data.billboard:Destroy() end
             if data.box then data.box:Destroy() end
+            if data.health then data.health:Destroy() end
             if data.update then data.update:Disconnect() end
             if not Settings.ESPEnabled and not Settings.ESPV2Enabled then
                 if data.charConn then data.charConn:Disconnect() end
@@ -2024,29 +2152,37 @@ local function LoadConfig()
     return false
 end
 local Window = Library:CreateWindow({
-    Name = "Diablo Hub Merry Christmas"
+    Name = "Diablo Hub"
 })
-Window:Section("Fling Control 🌪️")
-UIElements.TouchFlingEnabled = Window:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
+
+local CombatTab = Window:Tab("Combat ⚔️")
+local VisualsTab = Window:Tab("Visuals 👁️")
+local MovementTab = Window:Tab("Movement ⚡")
+local SettingsTab = Window:Tab("Settings ⚙️")
+
+-- Combat Tab
+CombatTab:Section("Fling 🌪️")
+UIElements.TouchFlingEnabled = CombatTab:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
     ToggleFling(state)
 end)
-UIElements.ClickToFlingEnabled = Window:Toggle("Click-to-Fling 🎯", Settings.ClickToFlingEnabled, function(state)
+UIElements.ClickToFlingEnabled = CombatTab:Toggle("Click-to-Fling 🎯", Settings.ClickToFlingEnabled, function(state)
     ToggleClickToFling(state)
 end)
-UIElements.AntiFlingEnabled = Window:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
+UIElements.AntiFlingEnabled = CombatTab:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
     ToggleAntiFling(state)
 end)
-Window:Section("Hitbox Expander 📦")
-UIElements.HitboxExpanderEnabled = Window:Toggle("Enable Expander 🟢", Settings.HitboxExpanderEnabled, function(state)
+
+CombatTab:Section("Hitbox Expander")
+UIElements.HitboxExpanderEnabled = CombatTab:Toggle("Enable Expander 🟢", Settings.HitboxExpanderEnabled, function(state)
     ToggleHitboxExpander(state)
 end)
-UIElements.HitboxSize = Window:NumberInput("Hitbox Size 📏", Settings.HitboxSize, function(value)
+UIElements.HitboxSize = CombatTab:NumberInput("Hitbox Size 📏", Settings.HitboxSize, function(value)
     Settings.HitboxSize = value
 end)
-UIElements.HitboxTeamCheck = Window:Toggle("Hitbox Team Check 🛡️", Settings.HitboxTeamCheck, function(state)
+UIElements.HitboxTeamCheck = CombatTab:Toggle("Hitbox Team Check 🛡️", Settings.HitboxTeamCheck, function(state)
     Settings.HitboxTeamCheck = state
 end)
-Window:Dropdown("Ignore Player 🚫", {}, function(selected)
+CombatTab:Dropdown("Ignore Player 🚫", {}, function(selected)
     local foundIdx = nil
     for i, name in ipairs(Settings.HitboxIgnoreList) do
         if name == selected then
@@ -2070,7 +2206,7 @@ Window:Dropdown("Ignore Player 🚫", {}, function(selected)
         })
     end
 end)
-Window:Button("Clear Ignore List 🗑️", function()
+CombatTab:Button("Clear Ignore List 🗑️", function()
     Settings.HitboxIgnoreList = {}
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Hitbox Expander",
@@ -2078,37 +2214,10 @@ Window:Button("Clear Ignore List 🗑️", function()
         Duration = 3
     })
 end)
-Window:Section("Movement & Teleport ⚡")
-UIElements.FlyEnabled = Window:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
-    ToggleFly(state)
-end)
-UIElements.FlySpeed = Window:NumberInput("Fly Speed 🚀", 1, function(value)
-    Settings.FlySpeed = value
-end)
-UIElements.TPWalkEnabled = Window:Toggle("TP Walk ⚡", Settings.TPWalkEnabled, function(state)
-    Settings.TPWalkEnabled = state
-    SetupTPWalk()
-end)
-UIElements.TPWalkSpeed = Window:NumberInput("TP Speed 🎯", 1, function(value)
-    Settings.TPWalkSpeed = value
-end)
-UIElements.WalkOnWaterEnabled = Window:Toggle("Walk on Water 🌊", Settings.WalkOnWaterEnabled, function(state)
-    ToggleWalkOnWater(state)
-end)
-Window:Dropdown("Teleport to Player 📍", {}, function(selected)
-    local target = Players:FindFirstChild(selected)
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-    end
-end)
-UIElements.AutoRespawnTPEnabled = Window:Toggle("Auto Tp Last Death ♻️", Settings.AutoRespawnTPEnabled, function(state)
-    Settings.AutoRespawnTPEnabled = state
-end)
-Window:Button("TP to Last Death 💀", function()
-    TeleportToLastDeath()
-end)
-Window:Section("Visuals & Camera 👁️")
-UIElements.ESPEnabled = Window:Toggle("ESP V1 👁️", Settings.ESPEnabled, function(state)
+
+-- Visuals Tab
+VisualsTab:Section("ESP & Visuals 👁️")
+UIElements.ESPEnabled = VisualsTab:Toggle("ESP V1 👁️", Settings.ESPEnabled, function(state)
     Settings.ESPEnabled = state
     if state then
         enableESP()
@@ -2116,7 +2225,7 @@ UIElements.ESPEnabled = Window:Toggle("ESP V1 👁️", Settings.ESPEnabled, fun
         disableESP()
     end
 end)
-UIElements.ESPV2Enabled = Window:Toggle("ESP V2 🛰️", Settings.ESPV2Enabled, function(state)
+UIElements.ESPV2Enabled = VisualsTab:Toggle("ESP V2 🛰️", Settings.ESPV2Enabled, function(state)
     Settings.ESPV2Enabled = state
     if state then
         enableESP()
@@ -2124,14 +2233,14 @@ UIElements.ESPV2Enabled = Window:Toggle("ESP V2 🛰️", Settings.ESPV2Enabled,
         disableESP()
     end
 end)
-UIElements.ESPTeamCheck = Window:Toggle("ESP Team Check 🛡️", Settings.ESPTeamCheck, function(state)
+UIElements.ESPTeamCheck = VisualsTab:Toggle("ESP Team Check 🛡️", Settings.ESPTeamCheck, function(state)
     Settings.ESPTeamCheck = state
     if Settings.ESPEnabled or Settings.ESPV2Enabled then
         disableESP()
         enableESP()
     end
 end)
-Window:Dropdown("Ally Management 🛡️", {}, function(selected)
+VisualsTab:Dropdown("Ally Management 🛡️", {}, function(selected)
     local foundIdx = nil
     for i, name in ipairs(Settings.AllyNames) do
         if name == selected then
@@ -2155,7 +2264,7 @@ Window:Dropdown("Ally Management 🛡️", {}, function(selected)
         })
     end
 end)
-Window:Button("Clear Ally List 🗑️", function()
+VisualsTab:Button("Clear Ally List 🗑️", function()
     Settings.AllyNames = {}
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Ally System",
@@ -2163,73 +2272,109 @@ Window:Button("Clear Ally List 🗑️", function()
         Duration = 3
     })
 end)
-UIElements.FreecamEnabled = Window:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
+UIElements.FullbrightEnabled = VisualsTab:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
+    SetFullbright(state)
+end)
+VisualsTab:Button("Deep Map Clean 🧹", function()
+    ToggleMapCleaner()
+end)
+
+VisualsTab:Section("Camera Controls 🎥")
+UIElements.FreecamEnabled = VisualsTab:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
     ToggleFreecam(state)
 end)
-UIElements.FreecamSpeed = Window:NumberInput("Freecam Speed 🏎️", Settings.FreecamSpeed, function(value)
+UIElements.FreecamSpeed = VisualsTab:NumberInput("Freecam Speed 🏎️", Settings.FreecamSpeed, function(value)
     Settings.FreecamSpeed = value
 end)
-Window:Dropdown("Spectate Player 📹", {}, function(selected)
+VisualsTab:Dropdown("Spectate Player 📹", {}, function(selected)
     SpectatePlayer(selected)
 end)
-Window:Button("Reset Camera 🎥", function()
+VisualsTab:Button("Reset Camera 🎥", function()
     SpectatePlayer("None")
 end)
-UIElements.AntiScreenShakeEnabled = Window:Toggle("Anti-Screen Shake 📸", Settings.AntiScreenShakeEnabled, function(state)
+UIElements.AntiScreenShakeEnabled = VisualsTab:Toggle("Anti-Screen Shake 📸", Settings.AntiScreenShakeEnabled, function(state)
     ToggleAntiScreenShake(state)
 end)
-UIElements.ZoomUnlockerEnabled = Window:Toggle("Zoom Unlocker 🔭", Settings.ZoomUnlockerEnabled, function(state)
+UIElements.ZoomUnlockerEnabled = VisualsTab:Toggle("Zoom Unlocker 🔭", Settings.ZoomUnlockerEnabled, function(state)
     ToggleZoomUnlocker(state)
 end)
-UIElements.MaxZoomDistance = Window:NumberInput("Max Zoom Distance", Settings.MaxZoomDistance, function(value)
+UIElements.MaxZoomDistance = VisualsTab:NumberInput("Max Zoom Distance", Settings.MaxZoomDistance, function(value)
     Settings.MaxZoomDistance = value
     if Settings.ZoomUnlockerEnabled then
         ToggleZoomUnlocker(true)
     end
 end)
-Window:Section("Game Tweaks 🌍")
-UIElements.NoClipEnabled = Window:Toggle("NoClip 👻", Settings.NoClipEnabled, function(state)
-    Settings.NoClipEnabled = state
-    SetupNoClip()
+
+-- Movement Tab
+MovementTab:Section("Movement Tweaks ⚡")
+UIElements.FlyEnabled = MovementTab:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
+    ToggleFly(state)
 end)
-UIElements.InfiniteJumpEnabled = Window:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
+UIElements.FlySpeed = MovementTab:NumberInput("Fly Speed 🚀", 1, function(value)
+    Settings.FlySpeed = value
+end)
+UIElements.TPWalkEnabled = MovementTab:Toggle("TP Walk ⚡", Settings.TPWalkEnabled, function(state)
+    Settings.TPWalkEnabled = state
+    SetupTPWalk()
+end)
+UIElements.TPWalkSpeed = MovementTab:NumberInput("TP Speed 🎯", 1, function(value)
+    Settings.TPWalkSpeed = value
+end)
+UIElements.WalkOnWaterEnabled = MovementTab:Toggle("Walk on Water 🌊", Settings.WalkOnWaterEnabled, function(state)
+    ToggleWalkOnWater(state)
+end)
+UIElements.InfiniteJumpEnabled = MovementTab:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
     Settings.InfiniteJumpEnabled = state
     SetupInfiniteJump()
 end)
-UIElements.InstantInteractEnabled = Window:Toggle("Instant Interact 👆", Settings.InstantInteractEnabled, function(state)
-    ToggleInstantInteract(state)
+UIElements.NoClipEnabled = MovementTab:Toggle("NoClip 👻", Settings.NoClipEnabled, function(state)
+    Settings.NoClipEnabled = state
+    SetupNoClip()
 end)
-UIElements.AntiTouchEnabled = Window:Toggle("Anti-Touch 🚫", Settings.AntiTouchEnabled, function(state)
-    ToggleAntiTouch(state)
+MovementTab:Dropdown("Teleport to Player 📍", {}, function(selected)
+    local target = Players:FindFirstChild(selected)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+    end
 end)
-UIElements.FullbrightEnabled = Window:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
-    SetFullbright(state)
+UIElements.AutoRespawnTPEnabled = MovementTab:Toggle("Auto Tp Last Death ♻️", Settings.AutoRespawnTPEnabled, function(state)
+    Settings.AutoRespawnTPEnabled = state
 end)
-UIElements.FPSBoosterEnabled = Window:Toggle("FPS Booster ⚡", Settings.FPSBoosterEnabled, function(state)
+MovementTab:Button("TP to Last Death 💀", function()
+    TeleportToLastDeath()
+end)
+
+-- Settings Tab
+SettingsTab:Section("System & Optimization ⚙️")
+UIElements.FPSBoosterEnabled = SettingsTab:Toggle("FPS Booster ⚡", Settings.FPSBoosterEnabled, function(state)
     ToggleFPSBooster(state)
 end)
-Window:Button("Deep Map Clean 🧹", function()
-    ToggleMapCleaner()
-end)
-Window:Section("Server & System ⚙️")
-UIElements.AntiAFKEnabled = Window:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
+UIElements.AntiAFKEnabled = SettingsTab:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
     ToggleAntiAFK(state)
 end)
-Window:Button("Rejoin Server 🔄", function()
+UIElements.InstantInteractEnabled = SettingsTab:Toggle("Instant Interact 👆", Settings.InstantInteractEnabled, function(state)
+    ToggleInstantInteract(state)
+end)
+UIElements.AntiTouchEnabled = SettingsTab:Toggle("Anti-Touch 🚫", Settings.AntiTouchEnabled, function(state)
+    ToggleAntiTouch(state)
+end)
+SettingsTab:Button("Rejoin Server 🔄", function()
     RejoinServer()
 end)
-Window:Button("Server Hop 🌎", function()
+SettingsTab:Button("Server Hop 🌎", function()
     ServerHop()
 end)
-Window:Button("Find Small Server 🕵️", function()
+SettingsTab:Button("Find Small Server 🕵️", function()
     FindSmallServer()
 end)
-Window:Button("Save Config 💾", function()
+SettingsTab:Section("Configuration 💾")
+SettingsTab:Button("Save Config 💾", function()
     SaveConfig()
 end)
-Window:Button("Load Config 📂", function()
+SettingsTab:Button("Load Config 📂", function()
     LoadConfig()
 end)
+
 task.spawn(function()
     while true do
         local names = {}
