@@ -293,17 +293,12 @@ function Library:CreateWindow(ArgSettings)
     MinimizedIcon.Position = UDim2.new(0.1, 0, 0.9, 0)
     MinimizedIcon.Size = UDim2.new(0, 0, 0, 0)
     MinimizedIcon.Visible = false
-    MinimizedIcon.Image = "rbxassetid://6421296789"
+    MinimizedIcon.Image = "rbxassetid://7205866966"
     MinimizedIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
     MinimizedIcon.ZIndex = 100
     local IconCorner = Instance.new("UICorner")
     IconCorner.CornerRadius = UDim.new(1, 0)
     IconCorner.Parent = MinimizedIcon
-    local IconStroke = Instance.new("UIStroke")
-    IconStroke.Parent = MinimizedIcon
-    IconStroke.Color = Config.Colors.Accent
-    IconStroke.Thickness = 2
-    IconStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     local IconGlow = Instance.new("ImageLabel")
     IconGlow.Name = "Glow"
     IconGlow.Parent = MinimizedIcon
@@ -359,6 +354,13 @@ function Library:CreateWindow(ArgSettings)
         ScreenGui:Destroy()
     end)
     MakeDraggable(Topbar, Main)
+    
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if input.KeyCode == (Settings.ToggleUIKey or Enum.KeyCode.RightControl) then
+            ToggleMinimize()
+        end
+    end)
+    
     -- Tabs Container within Main
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Name = "TabContainer"
@@ -774,6 +776,56 @@ function Library:CreateWindow(ArgSettings)
         TextBox.FocusLost:Connect(function(enterPressed)
             Value = TextBox.Text
             Callback(Value)
+        end)
+    end
+    function Elements:Keybind(Text, Default, Callback)
+        local Callback = Callback or function() end
+        local Key = Default or Enum.KeyCode.RightControl
+        local KeyFrame = Instance.new("Frame")
+        KeyFrame.Name = "Keybind"
+        KeyFrame.Parent = Container
+        KeyFrame.BackgroundColor3 = Config.Colors.Secondary
+        KeyFrame.Size = UDim2.new(1, 0, 0, 50)
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(0, 8)
+        Corner.Parent = KeyFrame
+        local Title = Instance.new("TextLabel")
+        Title.Parent = KeyFrame
+        Title.BackgroundTransparency = 1.000
+        Title.Position = UDim2.new(0, 12, 0, 0)
+        Title.Size = UDim2.new(0.6, 0, 1, 0)
+        Title.Font = Config.FontRegular
+        Title.Text = Text
+        Title.TextColor3 = Config.Colors.Text
+        Title.TextSize = 14.000
+        Title.TextXAlignment = Enum.TextXAlignment.Left
+        local BindBtn = Instance.new("TextButton")
+        BindBtn.Parent = KeyFrame
+        BindBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        BindBtn.Position = UDim2.new(1, -112, 0.5, -15)
+        BindBtn.Size = UDim2.new(0, 100, 0, 30)
+        BindBtn.Font = Config.Font
+        BindBtn.Text = Key.Name
+        BindBtn.TextColor3 = Config.Colors.Accent
+        BindBtn.TextSize = 14
+        local BtnCorner = Instance.new("UICorner")
+        BtnCorner.CornerRadius = UDim.new(0, 4)
+        BtnCorner.Parent = BindBtn
+        local Binding = false
+        BindBtn.MouseButton1Click:Connect(function()
+            if Binding then return end
+            Binding = true
+            BindBtn.Text = "..."
+            local conn
+            conn = UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    Key = input.KeyCode
+                    BindBtn.Text = Key.Name
+                    Binding = false
+                    conn:Disconnect()
+                    Callback(Key)
+                end
+            end)
         end)
     end
     function Elements:Dropdown(Text, Options, Callback)
@@ -2101,10 +2153,14 @@ local function SaveConfig()
         "TouchFlingEnabled", "AntiFlingEnabled", "InstantInteractEnabled", "ClickToFlingEnabled",
         "AntiAFKEnabled", "FlyEnabled", "FlySpeed", "ZoomUnlockerEnabled", "MaxZoomDistance", "AntiTouchEnabled", "AntiScreenShakeEnabled", "ESPTeamCheck", "AutoRespawnTPEnabled",
         "HitboxExpanderEnabled", "HitboxSize", "HitboxTeamCheck", "HitboxIgnoreList", "WalkOnWaterEnabled", "FreecamEnabled", "FreecamSpeed",
-        "MapCleanerEnabled", "FPSBoosterEnabled", "ESPV2Enabled", "AllyNames"
+        "MapCleanerEnabled", "FPSBoosterEnabled", "ESPV2Enabled", "AllyNames", "ToggleUIKey"
     }
     for _, key in pairs(SaveableKeys) do
-        ConfigData[key] = Settings[key]
+        if key == "ToggleUIKey" then
+             ConfigData[key] = Settings[key].Name
+        else
+             ConfigData[key] = Settings[key]
+        end
     end
     writefile(FolderName .. "/" .. ConfigName, HttpService:JSONEncode(ConfigData))
     game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -2119,13 +2175,18 @@ local function LoadConfig()
         local success, decoded = pcall(function() return HttpService:JSONDecode(raw) end)
         if success and type(decoded) == "table" then
             for key, value in pairs(decoded) do
-                Settings[key] = value
+                if key == "ToggleUIKey" then
+                    Settings[key] = Enum.KeyCode[value]
+                else
+                    Settings[key] = value
+                end
             end
             for key, element in pairs(UIElements) do
                 if Settings[key] ~= nil then
                     element.Set(Settings[key])
                 end
             end
+            if Settings.ToggleUIKey then UIElements.ToggleUIKey.Set(Settings.ToggleUIKey) end
             task.spawn(function()
                 SetFullbright(Settings.FullbrightEnabled)
                 SetupNoClip()
@@ -2375,6 +2436,11 @@ SettingsTab:Button("Load Config 📂", function()
     LoadConfig()
 end)
 
+SettingsTab:Section("Keybinds ⌨️")
+UIElements.ToggleUIKey = SettingsTab:Keybind("Toggle UI Key 🔓", Settings.ToggleUIKey, function(key)
+    Settings.ToggleUIKey = key
+end)
+
 task.spawn(function()
     while true do
         local names = {}
@@ -2406,4 +2472,6 @@ task.spawn(function()
         })
     end
 end)
+
+
 return Library
