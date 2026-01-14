@@ -1025,6 +1025,8 @@ Settings = {
     AimbotShowFOV = false,
     AimbotKey = Enum.UserInputType.MouseButton2,
     AimbotWallCheck = true,
+    AimbotPrediction = false,
+    AimbotSmartTarget = false,
 
     TriggerBotEnabled = false,
     TriggerBotDelayMode = "Medium",
@@ -2380,26 +2382,32 @@ local function GetClosestPlayer()
     local mousePos = UserInputService:GetMouseLocation()
     
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(Settings.AimbotPart) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
             if Settings.AimbotTeamCheck and player.Team == LocalPlayer.Team then continue end
 
-             local isWhitelisted = false
+            local isWhitelisted = false
             for _, name in pairs(Settings.WhitelistNames) do
                 if player.Name == name then isWhitelisted = true break end
             end
             if isWhitelisted then continue end
-            
-            local part = player.Character[Settings.AimbotPart]
-            local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
-            
-            if onScreen then
-                local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-                if dist < shortestDist then
 
-                    if IsVisible(player, part) then
-                        shortestDist = dist
-                        closest = player
+            local partsToScan = {Settings.AimbotPart}
+            if Settings.AimbotSmartTarget then
+                partsToScan = {"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}
+            end
+
+            for _, partName in ipairs(partsToScan) do
+                local part = player.Character:FindFirstChild(partName)
+                if part then
+                    local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                        if dist < shortestDist then
+                            if IsVisible(player, part) then
+                                shortestDist = dist
+                                closest = player
+                            end
+                        end
                     end
                 end
             end
@@ -2428,13 +2436,37 @@ function SetupAimbot()
 
         if isAiming then
             local target = GetClosestPlayer()
-            if target and target.Character and target.Character:FindFirstChild(Settings.AimbotPart) then
-                local targetPos = target.Character[Settings.AimbotPart].Position
-                local currentCFrame = workspace.CurrentCamera.CFrame
-                local goalCFrame = CFrame.new(currentCFrame.Position, targetPos)
+            if target and target.Character then
+                local partsToScan = {Settings.AimbotPart}
+                if Settings.AimbotSmartTarget then
+                    partsToScan = {"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}
+                end
                 
-
-                 workspace.CurrentCamera.CFrame = currentCFrame:Lerp(goalCFrame, Settings.AimbotSmoothness)
+                local targetPart = nil
+                for _, partName in ipairs(partsToScan) do
+                    local part = target.Character:FindFirstChild(partName)
+                    if part and IsVisible(target, part) then
+                        targetPart = part
+                        break
+                    end
+                end
+                
+                if targetPart then
+                    local targetPos = targetPart.Position
+                    if Settings.AimbotPrediction then
+                        local distance = (workspace.CurrentCamera.CFrame.Position - targetPos).Magnitude
+                        local velocity = targetPart.Velocity
+                        
+                        -- Basic prediction formula: Pos + (Vel * (Dist / Speed))
+                        -- We assume a generic speed of 1000 for standard projectile estimation
+                        local predictionStrength = distance / 1000 
+                        targetPos = targetPos + (velocity * predictionStrength)
+                    end
+                    
+                    local currentCFrame = workspace.CurrentCamera.CFrame
+                    local goalCFrame = CFrame.new(currentCFrame.Position, targetPos)
+                    workspace.CurrentCamera.CFrame = currentCFrame:Lerp(goalCFrame, Settings.AimbotSmoothness)
+                end
             end
         end
     end)
@@ -2470,6 +2502,14 @@ UIElements.AimbotWallCheck = AimbotTab:Toggle("Wall Check 🧱", Settings.Aimbot
 end)
 UIElements.AimbotShowFOV = AimbotTab:Toggle("Show FOV Circle ⭕", Settings.AimbotShowFOV, function(state)
     Settings.AimbotShowFOV = state
+end)
+UIElements.AimbotPrediction = AimbotTab:Toggle("Enable Prediction 🔮", Settings.AimbotPrediction, function(state)
+    Settings.AimbotPrediction = state
+    SaveConfig(true)
+end)
+UIElements.AimbotSmartTarget = AimbotTab:Toggle("Smart Target 🎯", Settings.AimbotSmartTarget, function(state)
+    Settings.AimbotSmartTarget = state
+    SaveConfig(true)
 end)
 
 AimbotTab:Section("TriggerBot 🔫")
@@ -2531,6 +2571,43 @@ end)
 
 UIElements.TriggerBotTeamCheck = AimbotTab:Toggle("Team Check 🛡️", Settings.TriggerBotTeamCheck, function(state)
     Settings.TriggerBotTeamCheck = state
+end)
+
+AimbotTab:Section("Whitelist Management (Aimbot & TriggerBot) 🛡️")
+AimbotTab:Dropdown("Add/Remove Player 👤", {}, function(selected)
+    local foundIdx = nil
+    for i, name in ipairs(Settings.WhitelistNames) do
+        if name == selected then
+            foundIdx = i
+            break
+        end
+    end
+    if foundIdx then
+        table.remove(Settings.WhitelistNames, foundIdx)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Whitelist System",
+            Text = selected .. " removed from Whitelist.",
+            Duration = 3
+        })
+    else
+        table.insert(Settings.WhitelistNames, selected)
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Whitelist System",
+            Text = selected .. " added to Whitelist.",
+            Duration = 3
+        })
+    end
+    SaveConfig(true)
+end, "Enter player name to Add/Remove")
+
+AimbotTab:Button("Clear Whitelist 🗑️", function()
+    Settings.WhitelistNames = {}
+    SaveConfig(true)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Whitelist System",
+        Text = "Whitelist cleared!",
+        Duration = 3
+    })
 end)
 
 
