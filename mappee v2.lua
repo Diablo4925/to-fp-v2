@@ -1004,6 +1004,7 @@ Settings = {
     FreecamEnabled = false,
     FreecamSpeed = 1,
     FPSBoosterEnabled = false,
+    RemoveBlurEnabled = false,
     FPSBoosterCache = {},
     OriginalValuesSaved = false,
     OriginalAmbient = nil,
@@ -1179,6 +1180,36 @@ local function ToggleWalkOnWater(state)
         if WaterPart then
             WaterPart:Destroy()
             WaterPart = nil
+        end
+    end
+end
+local RemoveBlurConnection = nil
+local function ToggleRemoveBlur(state)
+    Settings.RemoveBlurEnabled = state
+    if state then
+        if RemoveBlurConnection then RemoveBlurConnection:Disconnect() end
+        local function clearEffects()
+            local Lighting = game:GetService("Lighting")
+            local Camera = workspace.CurrentCamera
+            for _, effect in ipairs(Lighting:GetChildren()) do
+                if effect:IsA("BlurEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") then
+                    effect:Destroy()
+                end
+            end
+            if Camera then
+                for _, effect in ipairs(Camera:GetChildren()) do
+                    if effect:IsA("BlurEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") then
+                        effect:Destroy()
+                    end
+                end
+            end
+        end
+        clearEffects()
+        RemoveBlurConnection = RunService.RenderStepped:Connect(clearEffects)
+    else
+        if RemoveBlurConnection then
+            RemoveBlurConnection:Disconnect()
+            RemoveBlurConnection = nil
         end
     end
 end
@@ -2255,6 +2286,7 @@ local function LoadConfig()
                 ToggleAntiScreenShake(Settings.AntiScreenShakeEnabled)
                 if Settings.MapCleanerEnabled then ToggleMapCleaner(true) end
                 if Settings.FPSBoosterEnabled then ToggleFPSBooster(true) end
+                if Settings.RemoveBlurEnabled then ToggleRemoveBlur(true) end
                 ToggleHitboxExpander(Settings.HitboxExpanderEnabled)
                 ToggleClickToFling(Settings.ClickToFlingEnabled)
                 RadarFrame.Visible = Settings.RadarEnabled
@@ -3160,6 +3192,10 @@ local SettingsTab = Window:Tab("Settings ⚙️")
 SettingsTab:Section("System & Optimization ⚙️")
 UIElements.FPSBoosterEnabled = SettingsTab:Toggle("FPS Booster ⚡", Settings.FPSBoosterEnabled, function(state)
     ToggleFPSBooster(state)
+    SaveConfig(true)
+end)
+UIElements.RemoveBlurEnabled = SettingsTab:Toggle("Remove Blur 👓", Settings.RemoveBlurEnabled, function(state)
+    ToggleRemoveBlur(state)
     SaveConfig(true)
 end)
 UIElements.AntiAFKEnabled = SettingsTab:Toggle("Anti-AFK 💤", Settings.AntiAFKEnabled, function(state)
