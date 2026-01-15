@@ -290,7 +290,7 @@ function Library:CreateWindow(ArgSettings)
     MinimizedIcon.Position = UDim2.new(0.1, 0, 0.9, 0)
     MinimizedIcon.Size = UDim2.new(0, 0, 0, 0)
     MinimizedIcon.Visible = false
-    MinimizedIcon.Image = "rbxassetid://6421296789"
+    MinimizedIcon.Image = "rbxassetid://7205866966"
     MinimizedIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
     MinimizedIcon.ZIndex = 100
     local IconCorner = Instance.new("UICorner")
@@ -2114,11 +2114,6 @@ local function SetupNoClip()
             NoClipConnection:Disconnect()
             NoClipConnection = nil
         end
-        if LocalPlayer.Character then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = true end
-            end
-        end
     end
 end
 local AntiScreenShakeConnection = nil
@@ -2655,6 +2650,47 @@ VisualsTab:Dropdown("Ally Management 🛡️", {}, function(selected)
         })
     end
 end, "Enter player name to Add/Remove")
+VisualsTab:Button("Clear Ally List 🗑️", function()
+    Settings.AllyNames = {}
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Ally System",
+        Text = "Ally list cleared!",
+        Duration = 3
+    })
+end)
+
+UIElements.FullbrightEnabled = VisualsTab:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
+    SetFullbright(state)
+end)
+VisualsTab:Button("Deep Map Clean 🧹", function()
+    ToggleMapCleaner()
+end)
+
+VisualsTab:Section("Camera Controls 🎥")
+UIElements.FreecamEnabled = VisualsTab:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
+    ToggleFreecam(state)
+end)
+UIElements.FreecamSpeed = VisualsTab:NumberInput("Freecam Speed 🏎️", Settings.FreecamSpeed, function(value)
+    Settings.FreecamSpeed = value
+end)
+VisualsTab:Dropdown("Spectate Player 📹", {}, function(selected)
+    SpectatePlayer(selected)
+end)
+VisualsTab:Button("Reset Camera 🎥", function()
+    SpectatePlayer("None")
+end)
+UIElements.AntiScreenShakeEnabled = VisualsTab:Toggle("Anti-Screen Shake 📸", Settings.AntiScreenShakeEnabled, function(state)
+    ToggleAntiScreenShake(state)
+end)
+UIElements.ZoomUnlockerEnabled = VisualsTab:Toggle("Zoom Unlocker 🔭", Settings.ZoomUnlockerEnabled, function(state)
+    ToggleZoomUnlocker(state)
+end)
+UIElements.MaxZoomDistance = VisualsTab:NumberInput("Max Zoom Distance", Settings.MaxZoomDistance, function(value)
+    Settings.MaxZoomDistance = value
+    if Settings.ZoomUnlockerEnabled then
+        ToggleZoomUnlocker(true)
+    end
+end)
 
 VisualsTab:Section("Radar System 📡")
 
@@ -2820,46 +2856,6 @@ end)
 UIElements.RadarTeamCheck = VisualsTab:Toggle("Team Check 🛡️", Settings.RadarTeamCheck, function(state)
     Settings.RadarTeamCheck = state
     SaveConfig(true)
-end)
-VisualsTab:Button("Clear Ally List 🗑️", function()
-    Settings.AllyNames = {}
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Ally System",
-        Text = "Ally list cleared!",
-        Duration = 3
-    })
-end)
-UIElements.FullbrightEnabled = VisualsTab:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
-    SetFullbright(state)
-end)
-VisualsTab:Button("Deep Map Clean 🧹", function()
-    ToggleMapCleaner()
-end)
-
-VisualsTab:Section("Camera Controls 🎥")
-UIElements.FreecamEnabled = VisualsTab:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
-    ToggleFreecam(state)
-end)
-UIElements.FreecamSpeed = VisualsTab:NumberInput("Freecam Speed 🏎️", Settings.FreecamSpeed, function(value)
-    Settings.FreecamSpeed = value
-end)
-VisualsTab:Dropdown("Spectate Player 📹", {}, function(selected)
-    SpectatePlayer(selected)
-end)
-VisualsTab:Button("Reset Camera 🎥", function()
-    SpectatePlayer("None")
-end)
-UIElements.AntiScreenShakeEnabled = VisualsTab:Toggle("Anti-Screen Shake 📸", Settings.AntiScreenShakeEnabled, function(state)
-    ToggleAntiScreenShake(state)
-end)
-UIElements.ZoomUnlockerEnabled = VisualsTab:Toggle("Zoom Unlocker 🔭", Settings.ZoomUnlockerEnabled, function(state)
-    ToggleZoomUnlocker(state)
-end)
-UIElements.MaxZoomDistance = VisualsTab:NumberInput("Max Zoom Distance", Settings.MaxZoomDistance, function(value)
-    Settings.MaxZoomDistance = value
-    if Settings.ZoomUnlockerEnabled then
-        ToggleZoomUnlocker(true)
-    end
 end)
 
 
