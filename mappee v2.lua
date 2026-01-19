@@ -19,6 +19,7 @@ local WaterConnection = nil
 local FreecamConnection = nil
 local WaterPart = nil
 local AimbotFOVCircle = nil
+local TeleportQueued = false
 
 pcall(function()
     AimbotFOVCircle = Drawing.new("Circle")
@@ -178,30 +179,35 @@ end
 LoadConfig()
 
 local function QueueTeleport()
-    if not Settings.AutoReExecuteEnabled then return end
+    if TeleportQueued or not Settings.AutoReExecuteEnabled then return end
     local URL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
     if URL == "" or not URL:find("http") then return end
     
     local queue = queue_on_teleport or (syn and syn.queue_on_teleport)
     if queue then
-        print("[Diablo Hub] Queuing teleport re-execution...")
+        TeleportQueued = true
+        local filePath = FolderName .. "/" .. ConfigName
         local code = [[
             repeat task.wait() until game:IsLoaded()
             local lp = game:GetService("Players").LocalPlayer
             repeat task.wait() until lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-            print("[Diablo Hub] Character loaded! Auto Re-executed."); 
+            
+            local success, content = pcall(function() return readfile("]]..filePath..[[") end)
+            if success and content then
+                local decodeSuccess, decoded = pcall(function() return game:GetService("HttpService"):JSONDecode(content) end)
+                if decodeSuccess and type(decoded) == "table" and decoded.AutoReExecuteEnabled == false then
+                    return
+                end
+            end
             loadstring(game:HttpGet("]]..URL..[["))()
         ]]
         queue(code)
-    else
-        warn("[Diablo Hub] Executor does not support queue_on_teleport!")
     end
 end
 
 task.spawn(function()
     repeat task.wait() until Players.LocalPlayer
     Players.LocalPlayer.OnTeleport:Connect(function(state)
-        print("[Diablo Hub] Teleport detected via OnTeleport!")
         QueueTeleport()
     end)
 end)
@@ -212,7 +218,6 @@ setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if self == TeleportService and (method == "Teleport" or method == "TeleportToPlaceInstance" or method == "TeleportToSpawnPoint") then
-        print("[Diablo Hub] Teleport detected via __namecall!")
         QueueTeleport()
     end
     return old(self, ...)
