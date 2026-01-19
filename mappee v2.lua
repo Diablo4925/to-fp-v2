@@ -1,13 +1,5 @@
-local TeleportService = game:GetService("TeleportService")
-local Players = game:GetService("Players")
-getgenv().DiabloSettings = getgenv().DiabloSettings or {
-    AutoReExecuteEnabled = true
-}
-local Settings = getgenv().DiabloSettings
-
 local function QueueTeleport()
-    local s = getgenv().DiabloSettings or Settings
-    if not s or not s.AutoReExecuteEnabled then return end
+    if not Settings or not Settings.AutoReExecuteEnabled then return end
     local URL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
     if URL == "" or not URL:find("http") then return end
     
@@ -30,8 +22,10 @@ end
 task.spawn(function()
     repeat task.wait() until Players.LocalPlayer
     Players.LocalPlayer.OnTeleport:Connect(function(state)
-        print("[Diablo Hub] Teleport detected via OnTeleport!")
-        QueueTeleport()
+        if Settings and Settings.AutoReExecuteEnabled then
+            print("[Diablo Hub] Teleport detected via OnTeleport!")
+            QueueTeleport()
+        end
     end)
 end)
 
@@ -41,8 +35,10 @@ setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if self == TeleportService and (method == "Teleport" or method == "TeleportToPlaceInstance" or method == "TeleportToSpawnPoint") then
-        print("[Diablo Hub] Teleport detected via __namecall!")
-        QueueTeleport()
+        if Settings and Settings.AutoReExecuteEnabled then
+            print("[Diablo Hub] Teleport detected via __namecall!")
+            QueueTeleport()
+        end
     end
     return old(self, ...)
 end)
@@ -55,9 +51,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
-local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local LocalPlayer = Players.LocalPlayer
@@ -1015,7 +1009,8 @@ function Library:CreateWindow(ArgSettings)
     end
     return Library
 end
-getgenv().DiabloSettings = {
+Settings = {
+    AutoReExecuteEnabled = true,
     FullbrightEnabled = false,
     TPWalkEnabled = false,
     TPWalkSpeed = 1,
@@ -1082,7 +1077,6 @@ getgenv().DiabloSettings = {
     RadarSize = 150,
     RadarTeamCheck = true
 }
-Settings = getgenv().DiabloSettings
 local espConnections = {}
 local TPWalkConnection = nil
 local NoClipConnection = nil
