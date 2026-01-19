@@ -21,6 +21,15 @@ local WaterPart = nil
 local AimbotFOVCircle = nil
 local TeleportQueued = false
 
+-- Local Header (Pre-declaration to fix scope issues)
+local SetFullbright, SetupNoClip, SetupInfiniteJump, ToggleAntiAFK, SetupTPWalk
+local enableESP, disableESP, ToggleFly, ToggleFling, ToggleAntiFling
+local ToggleInstantInteract, ToggleZoomUnlocker, ToggleAntiTouch, ToggleAntiScreenShake
+local ToggleMapCleaner, ToggleFPSBooster, ToggleRemoveBlur, ToggleHitboxExpander
+local ToggleClickToFling, SetupAimbot, ToggleFreecam, RejoinServer, ServerHop
+local FindSmallServer, TeleportToLastDeath, SetupDeathRecall, SpectatePlayer
+local RadarFrame = nil
+
 pcall(function()
     AimbotFOVCircle = Drawing.new("Circle")
     AimbotFOVCircle.Thickness = 2
@@ -173,6 +182,10 @@ local function SyncUIElements()
         if typeof(ToggleClickToFling) == "function" then ToggleClickToFling(Settings.ClickToFlingEnabled) end
         if RadarFrame then RadarFrame.Visible = Settings.RadarEnabled end
         if typeof(SetupAimbot) == "function" then SetupAimbot() end
+        -- Missing Activations
+        if typeof(ToggleWalkOnWater) == "function" then ToggleWalkOnWater(Settings.WalkOnWaterEnabled) end
+        if typeof(ToggleFreecam) == "function" then ToggleFreecam(Settings.FreecamEnabled) end
+        if typeof(SetupDeathRecall) == "function" then SetupDeathRecall() end
     end)
 end
 
@@ -2568,128 +2581,7 @@ end)
 AimbotTab:Section("Aimbot / Camlock 🎯")
 
 
-local AimbotFOVCircle = Drawing.new("Circle")
-AimbotFOVCircle.Color = Color3.fromRGB(255, 255, 255)
-AimbotFOVCircle.Thickness = 1
-AimbotFOVCircle.Filled = false
-AimbotFOVCircle.Transparency = 1
-AimbotFOVCircle.NumSides = 64
-AimbotFOVCircle.Radius = Settings.AimbotFOV
-AimbotFOVCircle.Visible = false
-
-local function IsVisible(target, part)
-    if not Settings.AimbotWallCheck then return true end
-    local origin = workspace.CurrentCamera.CFrame.Position
-    local direction = part.Position - origin
-    local ray = Ray.new(origin, direction)
-    local ignore = {LocalPlayer.Character, workspace.CurrentCamera}
-    
-    local hit, pos = workspace:FindPartOnRayWithIgnoreList(ray, ignore)
-    if hit then
-        if hit:IsDescendantOf(target.Character) then
-            return true
-        end
-        return false
-    end
-    return true
-end
-
-local function GetClosestPlayer()
-    local closest = nil
-    local shortestDist = Settings.AimbotFOV
-    local mousePos = UserInputService:GetMouseLocation()
-    
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            if Settings.AimbotTeamCheck and player.Team == LocalPlayer.Team then continue end
-
-            local isWhitelisted = false
-            for _, name in pairs(Settings.WhitelistNames) do
-                if player.Name == name then isWhitelisted = true break end
-            end
-            if isWhitelisted then continue end
-
-            local partsToScan = {Settings.AimbotPart}
-            if Settings.AimbotSmartTarget then
-                partsToScan = {"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}
-            end
-
-            for _, partName in ipairs(partsToScan) do
-                local part = player.Character:FindFirstChild(partName)
-                if part then
-                    local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
-                    if onScreen then
-                        local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-                        if dist < shortestDist then
-                            if IsVisible(player, part) then
-                                shortestDist = dist
-                                closest = player
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return closest
-end
-
-function SetupAimbot()
-    RunService.RenderStepped:Connect(function()
-
-        AimbotFOVCircle.Radius = Settings.AimbotFOV
-        AimbotFOVCircle.Visible = Settings.AimbotShowFOV and Settings.AimbotEnabled
-        AimbotFOVCircle.Position = UserInputService:GetMouseLocation()
-        
-        local isAiming = false
-        if Settings.AimbotEnabled then
-            if typeof(Settings.AimbotKey) == "EnumItem" then
-                if Settings.AimbotKey.EnumType == Enum.UserInputType then
-                    isAiming = UserInputService:IsMouseButtonPressed(Settings.AimbotKey)
-                elseif Settings.AimbotKey.EnumType == Enum.KeyCode then
-                    isAiming = UserInputService:IsKeyDown(Settings.AimbotKey)
-                end
-            end
-        end
-
-        if isAiming then
-            local target = GetClosestPlayer()
-            if target and target.Character then
-                local partsToScan = {Settings.AimbotPart}
-                if Settings.AimbotSmartTarget then
-                    partsToScan = {"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}
-                end
-                
-                local targetPart = nil
-                for _, partName in ipairs(partsToScan) do
-                    local part = target.Character:FindFirstChild(partName)
-                    if part and IsVisible(target, part) then
-                        targetPart = part
-                        break
-                    end
-                end
-                
-                if targetPart then
-                    local targetPos = targetPart.Position
-                    if Settings.AimbotPrediction then
-                        local distance = (workspace.CurrentCamera.CFrame.Position - targetPos).Magnitude
-                        local velocity = targetPart.Velocity
-                        
-                        -- Basic prediction formula: Pos + (Vel * (Dist / Speed))
-                        -- We assume a generic speed of 1000 for standard projectile estimation
-                        local predictionStrength = distance / 1000 
-                        targetPos = targetPos + (velocity * predictionStrength)
-                    end
-                    
-                    local currentCFrame = workspace.CurrentCamera.CFrame
-                    local goalCFrame = CFrame.new(currentCFrame.Position, targetPos)
-                    workspace.CurrentCamera.CFrame = currentCFrame:Lerp(goalCFrame, Settings.AimbotSmoothness)
-                end
-            end
-        end
-    end)
-end
-SetupAimbot()
+-- Redundant SetupAimbot removed. One definition remains at the top/middle.
 
 UIElements.AimbotEnabled = AimbotTab:Toggle("Enable Aimbot 🎯", Settings.AimbotEnabled, function(state)
     Settings.AimbotEnabled = state
