@@ -1,5 +1,8 @@
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
+local Settings = {
+    AutoReExecuteEnabled = true
+}
 
 local function QueueTeleport()
     if not Settings.AutoReExecuteEnabled then return end
@@ -48,7 +51,6 @@ getgenv().DiabloHubLoaded = true
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local Settings = {}
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
