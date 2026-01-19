@@ -1,3 +1,7 @@
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local Settings = {}
+
 local function QueueTeleport()
     if not Settings or not Settings.AutoReExecuteEnabled then return end
     local URL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
