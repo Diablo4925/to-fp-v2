@@ -1,11 +1,13 @@
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
-local Settings = {
+getgenv().DiabloSettings = getgenv().DiabloSettings or {
     AutoReExecuteEnabled = true
 }
+local Settings = getgenv().DiabloSettings
 
 local function QueueTeleport()
-    if not Settings.AutoReExecuteEnabled then return end
+    local s = getgenv().DiabloSettings or Settings
+    if not s or not s.AutoReExecuteEnabled then return end
     local URL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
     if URL == "" or not URL:find("http") then return end
     
@@ -1013,7 +1015,7 @@ function Library:CreateWindow(ArgSettings)
     end
     return Library
 end
-Settings = {
+getgenv().DiabloSettings = {
     FullbrightEnabled = false,
     TPWalkEnabled = false,
     TPWalkSpeed = 1,
@@ -1080,6 +1082,7 @@ Settings = {
     RadarSize = 150,
     RadarTeamCheck = true
 }
+Settings = getgenv().DiabloSettings
 local espConnections = {}
 local TPWalkConnection = nil
 local NoClipConnection = nil
