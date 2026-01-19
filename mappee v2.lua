@@ -1029,8 +1029,8 @@ Settings = {
     AimbotPrediction = false,
     AimbotSmartTarget = false,
 
-    TriggerBotEnabled = false,
-    TriggerBotDelayMode = "Medium",
+    TriggerBotV1Enabled = false,
+    TriggerBotV2Enabled = false,
     TriggerBotTeamCheck = false,
 
     RadarEnabled = false,
@@ -1113,34 +1113,62 @@ local function RejoinServer()
 end
 local function ServerHop()
     local PlaceId = game.PlaceId
-    local function GetServer()
-        local raw = game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
-        local decoded = HttpService:JSONDecode(raw)
-        if decoded.data then
+    local function GetServers(cursor)
+        local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
+        if cursor then url = url .. "&cursor=" .. cursor end
+        local success, raw = pcall(function() return game:HttpGet(url) end)
+        if success and raw then
+            return pcall(function() return HttpService:JSONDecode(raw) end)
+        end
+        return false, nil
+    end
+
+    local function AttemptHop(retries, cursor)
+        if retries <= 0 then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Server Hop",
+                Text = "Failed to find server after multiple attempts.",
+                Duration = 5
+            })
+            return
+        end
+
+        local success, decoded = GetServers(cursor)
+        if success and decoded and decoded.data then
             local servers = {}
             for _, server in pairs(decoded.data) do
                 if type(server) == "table" and server.playing < server.maxPlayers and server.id ~= game.JobId then
                     table.insert(servers, server.id)
                 end
             end
+
             if #servers > 0 then
-                return servers[math.random(1, #servers)]
+                local randomServerId = servers[math.random(1, #servers)]
+                TeleportService:TeleportToPlaceInstance(PlaceId, randomServerId, LocalPlayer)
+            elseif decoded.nextPageCursor then
+                -- Try next page if current page has no suitable servers
+                AttemptHop(retries, decoded.nextPageCursor)
+            else
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Server Hop",
+                    Text = "Rate limited or no server found. Retrying in 5s...",
+                    Duration = 5
+                })
+                task.wait(5)
+                AttemptHop(retries - 1, nil)
             end
+        else
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Server Hop",
+                Text = "Rate limited or API error. Retrying in 5s...",
+                Duration = 5
+            })
+            task.wait(5)
+            AttemptHop(retries - 1, nil)
         end
-        return nil
     end
-    local ServerId = GetServer()
-    if ServerId then
-        TeleportService:TeleportToPlaceInstance(PlaceId, ServerId, LocalPlayer)
-    else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Server Hop",
-            Text = "No suitable server found, trying again...",
-            Duration = 5
-        })
-        task.wait(1)
-        ServerHop()
-    end
+    
+    AttemptHop(5, nil)
 end
 local WaterPart = nil
 local WaterConnection = nil
@@ -2541,60 +2569,84 @@ end)
 
 AimbotTab:Section("TriggerBot 🔫")
 
-local function TriggerBotLogic()
-    if not Settings.TriggerBotEnabled then return end
-    
+local isV2Holding = false
+
+local function TriggerBotV1Logic()
+    if not Settings.TriggerBotV1Enabled then return end
     local mouse = LocalPlayer:GetMouse()
     local target = mouse.Target
     if target and target.Parent then
         local player = Players:GetPlayerFromCharacter(target.Parent) or Players:GetPlayerFromCharacter(target.Parent.Parent)
         if player and player ~= LocalPlayer then
             if Settings.TriggerBotTeamCheck and player.Team == LocalPlayer.Team then return end
-            
             local isWhitelisted = false
             for _, name in pairs(Settings.WhitelistNames) do
                 if player.Name == name then isWhitelisted = true break end
             end
             if isWhitelisted then return end
-            
-             if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-
-                 local delayC = 0.1
-                 if Settings.TriggerBotDelayMode == "Fast (No Delay)" then
-                     delayC = 0
-                 elseif Settings.TriggerBotDelayMode == "Medium" then
-                     delayC = 0.15
-                 end
-                 
-                 
-                 task.wait(delayC)
-
-                 if mouse.Target == target and Settings.TriggerBotEnabled then
-                     mouse1click()
-                 end
-             end
+            if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+                mouse1click()
+            end
         end
     end
 end
 
-
-
-task.spawn(function()
-    while true do
-        if Settings.TriggerBotEnabled then
-            TriggerBotLogic()
+local function TriggerBotV2Logic()
+    if not Settings.TriggerBotV2Enabled then 
+        if isV2Holding then mouse1release() isV2Holding = false end
+        return 
+    end
+    
+    local mouse = LocalPlayer:GetMouse()
+    local target = mouse.Target
+    local shouldHold = false
+    
+    if target and target.Parent then
+        local player = Players:GetPlayerFromCharacter(target.Parent) or Players:GetPlayerFromCharacter(target.Parent.Parent)
+        if player and player ~= LocalPlayer then
+            if not (Settings.TriggerBotTeamCheck and player.Team == LocalPlayer.Team) then
+                local isWhitelisted = false
+                for _, name in pairs(Settings.WhitelistNames) do
+                    if player.Name == name then isWhitelisted = true break end
+                end
+                
+                if not isWhitelisted then
+                    shouldHold = true
+                end
+            end
         end
-        task.wait(0.1)
+    end
+    
+    if shouldHold then
+        if not isV2Holding then
+            mouse1press()
+            isV2Holding = true
+        end
+    else
+        if isV2Holding then
+            mouse1release()
+            isV2Holding = false
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if Settings.TriggerBotV1Enabled then
+        TriggerBotV1Logic()
+    end
+    if Settings.TriggerBotV2Enabled then
+        TriggerBotV2Logic()
     end
 end)
 
-UIElements.TriggerBotEnabled = AimbotTab:Toggle("Enable TriggerBot 🔫", Settings.TriggerBotEnabled, function(state)
-    Settings.TriggerBotEnabled = state
+UIElements.TriggerBotV1Enabled = AimbotTab:Toggle("TriggerBot V1 (Semi) 🔫", Settings.TriggerBotV1Enabled, function(state)
+    Settings.TriggerBotV1Enabled = state
 end)
 
-AimbotTab:Dropdown("Reaction Mode ⚡", {"Fast (No Delay)", "Medium"}, function(selected)
-    Settings.TriggerBotDelayMode = selected
+UIElements.TriggerBotV2Enabled = AimbotTab:Toggle("TriggerBot V2 (Rage Mode) 💀🔥", Settings.TriggerBotV2Enabled, function(state)
+    Settings.TriggerBotV2Enabled = state
 end)
+
 
 UIElements.TriggerBotTeamCheck = AimbotTab:Toggle("Team Check 🛡️", Settings.TriggerBotTeamCheck, function(state)
     Settings.TriggerBotTeamCheck = state
