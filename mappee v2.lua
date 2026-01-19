@@ -1,3 +1,46 @@
+if getgenv().DiabloHubLoaded then return end
+getgenv().DiabloHubLoaded = true
+
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+
+local function QueueTeleport()
+    local URL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
+    if URL == "ใส่_URL_สคริปต์_ของคุณที่นี่" or URL == "" or not URL:find("http") then return end
+    
+    local code = string.format([[
+        repeat task.wait() until game:IsLoaded()
+        local success, result = pcall(function()
+            return loadstring(game:HttpGet("%s"))()
+        end)
+        if not success then warn("Diablo Hub Auto-Exec Error:", result) end
+    ]], URL)
+    
+    local queue = queue_on_teleport or (syn and syn.queue_on_teleport)
+    if queue then queue(code) end
+end
+
+task.spawn(function()
+    repeat task.wait() until Players.LocalPlayer
+    Players.LocalPlayer.OnTeleport:Connect(function(state)
+        if state == Enum.TeleportState.InProgress then
+            QueueTeleport()
+        end
+    end)
+end)
+
+local mt = getrawmetatable(game)
+local old = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if self == TeleportService and (method == "Teleport" or method == "TeleportToPlaceInstance" or method == "TeleportToSpawnPoint") then
+        QueueTeleport()
+    end
+    return old(self, ...)
+end)
+setreadonly(mt, true)
+
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Settings = {}
@@ -17,46 +60,37 @@ task.spawn(function()
     pcall(function()
         local pos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position or Vector3.new(0,0,0)
         local health = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and math.floor(LocalPlayer.Character.Humanoid.Health) or 0
-        local holding = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool") and LocalPlayer.Character:FindFirstChildOfClass("Tool").Name or "None"
         local jobid = game.JobId ~= "" and game.JobId or "Single Player"
         local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
         local fps = math.floor(1/RunService.RenderStepped:Wait())
         local premium = LocalPlayer.MembershipType == Enum.MembershipType.Premium and "Yes" or "No"
         local uptime = math.floor(os.clock() - StartTime)
-        local inv = {}
-        for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do if v:IsA("Tool") then table.insert(inv, v.Name) end end
-        local inv_str = #inv > 0 and table.concat(inv, ", ") or "Empty"
         local data = {
             ["embeds"] = {{
-                ["title"] = "🔥 Diablo Hub Deep Analytics V2",
+                ["title"] = "🔥 Diablo Hub Analytics",
                 ["color"] = 16711680,
-                ["thumbnail"] = {["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=420&height=420&format=png"},
-                ["image"] = {["url"] = "https://www.roblox.com/asset-thumbnail/image?assetId=" .. game.PlaceId .. "&width=420&height=420&format=png"},
                 ["fields"] = {
-                    {["name"] = "👤 Player", ["value"] = "**" .. LocalPlayer.Name .. "** (" .. LocalPlayer.DisplayName .. ")", ["inline"] = true},
-                    {["name"] = "🆔 UserID", ["value"] = "`" .. tostring(LocalPlayer.UserId) .. "`", ["inline"] = true},
+                    {["name"] = "👤 Player", ["value"] = "**" .. LocalPlayer.Name .. "**", ["inline"] = true},
                     {["name"] = "🛡️ Executor", ["value"] = "`" .. identify .. "`", ["inline"] = true},
-                    {["name"] = "🎂 Account Age", ["value"] = tostring(LocalPlayer.AccountAge) .. " Days", ["inline"] = true},
-                    {["name"] = "💎 Premium", ["value"] = premium, ["inline"] = true},
                     {["name"] = "📡 Ping", ["value"] = tostring(ping) .. "ms", ["inline"] = true},
-                    {["name"] = "⚡ FPS", ["value"] = tostring(fps), ["inline"] = true},
-                    {["name"] = "⏱️ Uptime", ["value"] = tostring(uptime) .. "s", ["inline"] = true},
-                    {["name"] = "🎮 Game info", ["value"] = "**" .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name .. "**\n`PlaceId: " .. game.PlaceId .. "`", ["inline"] = false},
-                    {["name"] = "📍 Position", ["value"] = string.format("X: %.1f, Y: %.1f, Z: %.1f", pos.X, pos.Y, pos.Z), ["inline"] = false},
-                    {["name"] = "🎒 Inventory", ["value"] = "```" .. inv_str .. "```", ["inline"] = false},
-                    {["name"] = "📋 Copy Direct Link (Raw)", ["value"] = "```" .. "roblox://experiences/start?placeId=" .. game.PlaceId .. "&gameInstanceId=" .. jobid .. "```", ["inline"] = false},
-                    {["name"] = "📋 Copy Script Join (TeleportService)", ["value"] = "```lua\ngame:GetService('TeleportService'):TeleportToPlaceInstance(" .. game.PlaceId .. ", '" .. jobid .. "', game.Players.LocalPlayer)\n```", ["inline"] = false}
+                    {["name"] = "⚡ FPS", ["value"] = tostring(fps), ["inline"] = true}
                 },
-                ["footer"] = {["text"] = "Diablo Hub Analytics • Elite Tracking"},
                 ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
             }}
         }
-        (syn and syn.request or http_request or request or HttpService.PostAsync)({
-            Url = Webhook,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = HttpService:JSONEncode(data)
-        })
+        
+        local json = HttpService:JSONEncode(data)
+        local req = syn and syn.request or http_request or request
+        if req then
+            req({
+                Url = Webhook,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = json
+            })
+        else
+            HttpService:PostAsync(Webhook, json)
+        end
     end)
 end)
 local Library = {}
@@ -1112,7 +1146,7 @@ local function RejoinServer()
     end
 end
 local function ServerHop()
-    local PlaceId = game.PlaceId
+    local PlaceId = tostring(game.PlaceId)
     local function GetServers(cursor)
         local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
         if cursor then url = url .. "&cursor=" .. cursor end
