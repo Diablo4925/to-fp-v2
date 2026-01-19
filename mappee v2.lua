@@ -12,11 +12,6 @@ local FolderName = "Diablo Script"
 local ConfigName = "config.json"
 local UIElements = {}
 local espConnections = {}
-local TPWalkConnection = nil
-local NoClipConnection = nil
-local InfiniteJumpConnection = nil
-local WaterConnection = nil
-local FreecamConnection = nil
 local WaterPart = nil
 local AimbotFOVCircle = nil
 local TeleportQueued = false
@@ -28,7 +23,14 @@ local ToggleInstantInteract, ToggleZoomUnlocker, ToggleAntiTouch, ToggleAntiScre
 local ToggleMapCleaner, ToggleFPSBooster, ToggleRemoveBlur, ToggleHitboxExpander
 local ToggleClickToFling, SetupAimbot, ToggleFreecam, RejoinServer, ServerHop
 local FindSmallServer, TeleportToLastDeath, SetupDeathRecall, SpectatePlayer
+local ToggleWalkOnWater, TriggerBotV1Logic, TriggerBotV2Logic -- Pre-declared
 local RadarFrame = nil
+
+-- Connection Variables (Ensuring clean state management)
+local TPWalkConnection, NoClipConnection, InfiniteJumpConnection, WaterConnection
+local FreecamConnection, FullbrightConnection, AntiScreenShakeConnection, RemoveBlurConnection
+local FPSBoosterConnection, HitboxConnection, InstantInteractConnection, ClickToFlingConnection
+local AimbotConnection, TriggerBotConnection
 
 pcall(function()
     AimbotFOVCircle = Drawing.new("Circle")
@@ -1195,8 +1197,8 @@ function Library:CreateWindow(ArgSettings)
     end
     return Library
 end
-local RadarFrame = nil
-local function ToggleFly(state)
+RadarFrame = nil
+ToggleFly = function(state)
     Settings.FlyEnabled = state
     if state then
         local character = LocalPlayer.Character
@@ -1252,7 +1254,7 @@ local function ToggleFly(state)
         end
     end
 end
-local function RejoinServer()
+RejoinServer = function()
     if #Players:GetPlayers() <= 1 then
         LocalPlayer:Kick("\nRejoining...")
         task.wait()
@@ -1261,7 +1263,7 @@ local function RejoinServer()
         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     end
 end
-local function ServerHop()
+ServerHop = function()
     local PlaceId = tostring(game.PlaceId)
     local function GetServers(cursor)
         local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
@@ -1322,7 +1324,7 @@ local function ServerHop()
 end
 local WaterPart = nil
 local WaterConnection = nil
-local function ToggleWalkOnWater(state)
+ToggleWalkOnWater = function(state)
     Settings.WalkOnWaterEnabled = state
     if state then
         if not WaterPart then
@@ -1362,7 +1364,7 @@ local function ToggleWalkOnWater(state)
     end
 end
 local RemoveBlurConnection = nil
-local function ToggleRemoveBlur(state)
+ToggleRemoveBlur = function(state)
     Settings.RemoveBlurEnabled = state
     if state then
         if RemoveBlurConnection then RemoveBlurConnection:Disconnect() end
@@ -1392,7 +1394,7 @@ local function ToggleRemoveBlur(state)
     end
 end
 local FPSBoosterConnection = nil
-local function ToggleFPSBooster(state)
+ToggleFPSBooster = function(state)
     Settings.FPSBoosterEnabled = state
     if state then
         Settings.FPSBoosterCache = {}
@@ -1486,7 +1488,7 @@ local function ToggleFPSBooster(state)
     end
 end
 local DronePart = nil
-local function ToggleFreecam(state)
+ToggleFreecam = function(state)
     Settings.FreecamEnabled = state
     local Camera = workspace.CurrentCamera
     if state then
@@ -1550,7 +1552,7 @@ local function ToggleFreecam(state)
         if DronePart then DronePart:Destroy() DronePart = nil end
     end
 end
-local function FindSmallServer()
+FindSmallServer = function()
     local PlaceId = game.PlaceId
     local function getServers(cursor)
         local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -1613,7 +1615,7 @@ local function FindSmallServer()
     end)
 end
 local LastDeathPosition = nil
-local function TeleportToLastDeath()
+TeleportToLastDeath = function()
     if LastDeathPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = LastDeathPosition
         game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -1629,7 +1631,7 @@ local function TeleportToLastDeath()
         })
     end
 end
-local function SetupDeathRecall()
+SetupDeathRecall = function()
     local function onCharacterAdded(character)
         local humanoid = character:WaitForChild("Humanoid")
         humanoid.Died:Connect(function()
@@ -1656,7 +1658,7 @@ local function SetupDeathRecall()
         task.spawn(function() onCharacterAdded(LocalPlayer.Character) end)
     end
 end
-local function ToggleMapCleaner()
+ToggleMapCleaner = function()
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("BasePart") then
             if v.Transparency == 1 and not v:IsA("MeshPart") then
@@ -1677,7 +1679,7 @@ local function ToggleMapCleaner()
         Duration = 3
     })
 end
-local function ToggleAntiAFK(state)
+ToggleAntiAFK = function(state)
     Settings.AntiAFKEnabled = state
     if state then
         local virtualUser = game:GetService("VirtualUser")
@@ -1689,7 +1691,7 @@ local function ToggleAntiAFK(state)
         end)
     end
 end
-local function ToggleFling(state)
+ToggleFling = function(state)
     Settings.TouchFlingEnabled = state
     if state then
         task.spawn(function()
@@ -1728,7 +1730,7 @@ local function ToggleFling(state)
         end
     end
 end
-local function ToggleAntiFling(state)
+ToggleAntiFling = function(state)
     Settings.AntiFlingEnabled = state
     if state then
         task.spawn(function()
@@ -1797,7 +1799,7 @@ local function UpdateHitboxes()
     end
 end
 local HitboxConnection = nil
-local function ToggleHitboxExpander(state)
+ToggleHitboxExpander = function(state)
     Settings.HitboxExpanderEnabled = state
     if state then
         if HitboxConnection then HitboxConnection:Disconnect() end
@@ -1810,9 +1812,8 @@ local function ToggleHitboxExpander(state)
         UpdateHitboxes()
     end
 end
-local InstantInteractConnection = nil
 local OriginalPrompts = {}
-local function ToggleInstantInteract(state)
+ToggleInstantInteract = function(state)
     Settings.InstantInteractEnabled = state
     if state then
         for _, prompt in pairs(workspace:GetDescendants()) do
@@ -1849,7 +1850,7 @@ local function ToggleInstantInteract(state)
     end
 end
 local ClickToFlingConnection = nil
-local function ToggleClickToFling(state)
+ToggleClickToFling = function(state)
     Settings.ClickToFlingEnabled = state
     if state then
         if ClickToFlingConnection then ClickToFlingConnection:Disconnect() end
@@ -1889,7 +1890,7 @@ local function ToggleClickToFling(state)
         end
     end
 end
-local function ToggleAntiTouch(state)
+ToggleAntiTouch = function(state)
     Settings.AntiTouchEnabled = state
     if state then
         task.spawn(function()
@@ -2160,7 +2161,7 @@ local function createESP(player)
     if not espConnections[player] then espConnections[player] = {} end
     espConnections[player].charConn = charConn
 end
-local function enableESP()
+enableESP = function()
     if not Settings.ESPEnabled and not Settings.ESPV2Enabled then return end
     for _, player in pairs(Players:GetPlayers()) do
         createESP(player)
@@ -2184,7 +2185,7 @@ local function enableESP()
         end)
     end
 end
-local function disableESP()
+disableESP = function()
     if not Settings.ESPEnabled and not Settings.ESPV2Enabled then
         if espConnections.playerAdded then espConnections.playerAdded:Disconnect() espConnections.playerAdded = nil end
         if espConnections.playerRemoving then espConnections.playerRemoving:Disconnect() espConnections.playerRemoving = nil end
@@ -2249,7 +2250,7 @@ local function RestoreOriginalLighting()
     end
 end
 local FullbrightConnection = nil
-local function SetFullbright(enable)
+SetFullbright = function(enable)
     Settings.FullbrightEnabled = enable
     if enable then
         SaveOriginalLighting()
@@ -2287,7 +2288,7 @@ local function SetFullbright(enable)
         RestoreOriginalLighting()
     end
 end
-local function SetupTPWalk()
+SetupTPWalk = function()
     if Settings.TPWalkEnabled then
         if TPWalkConnection then TPWalkConnection:Disconnect() end
         TPWalkConnection = RunService.Heartbeat:Connect(function()
@@ -2306,7 +2307,7 @@ local function SetupTPWalk()
         end
     end
 end
-local function SetupNoClip()
+SetupNoClip = function()
     if Settings.NoClipEnabled then
         if NoClipConnection then NoClipConnection:Disconnect() end
         NoClipConnection = RunService.Stepped:Connect(function()
@@ -2326,7 +2327,7 @@ local function SetupNoClip()
     end
 end
 local AntiScreenShakeConnection = nil
-local function ToggleAntiScreenShake(state)
+ToggleAntiScreenShake = function(state)
     Settings.AntiScreenShakeEnabled = state
     if state then
         if AntiScreenShakeConnection then AntiScreenShakeConnection:Disconnect() end
@@ -2342,7 +2343,7 @@ local function ToggleAntiScreenShake(state)
         end
     end
 end
-local function SetupInfiniteJump()
+SetupInfiniteJump = function()
     if Settings.InfiniteJumpEnabled then
         if InfiniteJumpConnection then InfiniteJumpConnection:Disconnect() end
         InfiniteJumpConnection = UserInputService.JumpRequest:Connect(function()
@@ -2357,7 +2358,7 @@ local function SetupInfiniteJump()
         end
     end
 end
-local function SpectatePlayer(targetName)
+SpectatePlayer = function(targetName)
     if not targetName or targetName == "None" then
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
@@ -2387,7 +2388,7 @@ local function SpectatePlayer(targetName)
         end
     end
 end
-local function ToggleZoomUnlocker(state)
+ToggleZoomUnlocker = function(state)
     Settings.ZoomUnlockerEnabled = state
     if state then
         LocalPlayer.CameraMaxZoomDistance = Settings.MaxZoomDistance
@@ -2453,9 +2454,9 @@ local function GetClosestPlayer()
     return closest
 end
 
-local function SetupAimbot()
+SetupAimbot = function()
     RunService.RenderStepped:Connect(function()
-        if not typeof(AimbotFOVCircle) == "table" then return end
+        if not AimbotFOVCircle then return end
         AimbotFOVCircle.Radius = Settings.AimbotFOV
         AimbotFOVCircle.Visible = Settings.AimbotShowFOV and Settings.AimbotEnabled
         AimbotFOVCircle.Position = UserInputService:GetMouseLocation()
@@ -2626,7 +2627,7 @@ AimbotTab:Section("TriggerBot 🔫")
 
 local isV2Holding = false
 
-local function TriggerBotV1Logic()
+TriggerBotV1Logic = function()
     if not Settings.TriggerBotV1Enabled then return end
     local mouse = LocalPlayer:GetMouse()
     local target = mouse.Target
@@ -2646,7 +2647,7 @@ local function TriggerBotV1Logic()
     end
 end
 
-local function TriggerBotV2Logic()
+TriggerBotV2Logic = function()
     if not Settings.TriggerBotV2Enabled then 
         if isV2Holding then mouse1release() isV2Holding = false end
         return 
@@ -3359,14 +3360,21 @@ task.spawn(function()
 end)
 SetupDeathRecall()
 task.spawn(function()
-    if not LocalPlayer.Character then
-        LocalPlayer.CharacterAdded:Wait()
+    local lp = Players.LocalPlayer
+    local function ensureReady()
+        if not lp.Character then lp.CharacterAdded:Wait() end
+        local char = lp.Character
+        repeat task.wait() until char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid")
+        return char
     end
-    task.wait(1)
+    
+    ensureReady()
+    task.wait(1.5) -- Give UI and game a moment to settle
     SyncUIElements()
+    
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Diablo Script",
-        Text = "Settings Auto-Loaded! ⚡",
+        Text = "All Features Synced & Active! ⚡🎄",
         Duration = 5
     })
 end)
