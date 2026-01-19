@@ -1,9 +1,184 @@
-local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
-local Settings = {}
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
+local FolderName = "Diablo Script"
+local ConfigName = "config.json"
+local UIElements = {}
+local espConnections = {}
+local TPWalkConnection = nil
+local NoClipConnection = nil
+local InfiniteJumpConnection = nil
+local WaterConnection = nil
+local FreecamConnection = nil
+local WaterPart = nil
+local AimbotFOVCircle = nil
+
+pcall(function()
+    AimbotFOVCircle = Drawing.new("Circle")
+    AimbotFOVCircle.Thickness = 2
+    AimbotFOVCircle.NumSides = 460
+    AimbotFOVCircle.Color = Color3.fromRGB(255, 50, 255)
+    AimbotFOVCircle.Filled = false
+    AimbotFOVCircle.Visible = false
+end)
+
+local Settings = {
+    FullbrightEnabled = false,
+    TPWalkEnabled = false,
+    TPWalkSpeed = 1,
+    NoClipEnabled = false,
+    InfiniteJumpEnabled = false,
+    ESPEnabled = false,
+    ESPV2Enabled = false,
+    ESPTeamCheck = false,
+    TouchFlingEnabled = false,
+    AntiFlingEnabled = false,
+    InstantInteractEnabled = false,
+    AntiAFKEnabled = false,
+    FlyEnabled = false,
+    FlySpeed = 1,
+    AntiTouchEnabled = false,
+    AntiScreenShakeEnabled = false,
+    ClickToFlingEnabled = false,
+    ZoomUnlockerEnabled = false,
+    MaxZoomDistance = 500,
+    AutoRespawnTPEnabled = false,
+    HitboxExpanderEnabled = false,
+    HitboxSize = 2,
+    HitboxTeamCheck = false,
+    HitboxIgnoreList = {},
+    WhitelistNames = {"pondthzaza0", "kaitunpond44", "pond4925"},
+    AllyNames = {"kaitunpond44", "gumilk254300", "your0nlywin", "pondthzaza0", "pond4925"},
+    WalkOnWaterEnabled = false,
+    MapCleanerEnabled = false,
+    FreecamEnabled = false,
+    FreecamSpeed = 1,
+    FPSBoosterEnabled = false,
+    RemoveBlurEnabled = false,
+    FPSBoosterCache = {},
+    OriginalValuesSaved = false,
+    OriginalAmbient = nil,
+    OriginalBrightness = nil,
+    OriginalClockTime = nil,
+    OriginalFogEnd = nil,
+    OriginalFogStart = nil,
+    OriginalOutdoorAmbient = nil,
+    OriginalAtmosphere = nil,
+    OriginalEffects = {},
+    ToggleUIKey = Enum.KeyCode.RightControl,
+    Waypoints = {},
+    AutoReExecuteEnabled = true,
+    AimbotEnabled = false,
+    AimbotPart = "Head",
+    AimbotFOV = 100,
+    AimbotSmoothness = 0.5,
+    AimbotTeamCheck = false,
+    AimbotShowFOV = false,
+    AimbotKey = Enum.UserInputType.MouseButton2,
+    AimbotWallCheck = true,
+    AimbotPrediction = false,
+    AimbotSmartTarget = false,
+    TriggerBotV1Enabled = false,
+    TriggerBotV2Enabled = false,
+    TriggerBotTeamCheck = false,
+    RadarEnabled = false,
+    RadarRange = 250,
+    RadarSize = 150,
+    RadarTeamCheck = true
+}
+
+local function SaveConfig(silent)
+    if not isfolder(FolderName) then makefolder(FolderName) end
+    local ConfigData = {}
+    for key, value in pairs(Settings) do
+        if typeof(value) == "EnumItem" then
+            ConfigData[key] = {Type = "Enum", Value = value.Name, EnumType = tostring(value.EnumType)}
+        elseif typeof(value) == "Color3" then
+            ConfigData[key] = {Type = "Color3", r = value.r, g = value.g, b = value.b}
+        else
+            ConfigData[key] = value
+        end
+    end
+    writefile(FolderName .. "/" .. ConfigName, HttpService:JSONEncode(ConfigData))
+    if not silent then
+        game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Diablo Hub", Text = "Config Saved successfully! 💾", Duration = 3})
+    end
+end
+
+local function LoadConfig()
+    if isfile(FolderName .. "/" .. ConfigName) then
+        local raw = readfile(FolderName .. "/" .. ConfigName)
+        local success, decoded = pcall(function() return HttpService:JSONDecode(raw) end)
+        if success and type(decoded) == "table" then
+            for key, data in pairs(decoded) do
+                if type(data) == "table" and data.Type == "Enum" then
+                    pcall(function()
+                        local enumGroup = data.EnumType:gsub("Enum.", "")
+                        Settings[key] = Enum[enumGroup][data.Value]
+                    end)
+                elseif type(data) == "table" and data.Type == "Color3" then
+                    Settings[key] = Color3.new(data.r, data.g, data.b)
+                elseif type(data) == "string" and (key == "ToggleUIKey" or key == "AimbotKey") then
+                    pcall(function()
+                        if pcall(function() return Enum.KeyCode[data] end) then
+                            Settings[key] = Enum.KeyCode[data]
+                        elseif pcall(function() return Enum.UserInputType[data] end) then
+                            Settings[key] = Enum.UserInputType[data]
+                        end
+                    end)
+                else
+                    Settings[key] = data
+                end
+            end
+            return true
+        end
+    end
+    return false
+end
+
+local function SyncUIElements()
+    for key, element in pairs(UIElements) do
+        if Settings[key] ~= nil and element and type(element) == "table" and element.Set then
+            element.Set(Settings[key])
+        end
+    end
+    task.spawn(function()
+        if typeof(SetFullbright) == "function" then SetFullbright(Settings.FullbrightEnabled) end
+        if typeof(SetupNoClip) == "function" then SetupNoClip() end
+        if typeof(SetupInfiniteJump) == "function" then SetupInfiniteJump() end
+        if typeof(ToggleAntiAFK) == "function" then ToggleAntiAFK(Settings.AntiAFKEnabled) end
+        if typeof(SetupTPWalk) == "function" then SetupTPWalk() end
+        if typeof(enableESP) == "function" and typeof(disableESP) == "function" then
+            if Settings.ESPEnabled or Settings.ESPV2Enabled then enableESP() else disableESP() end
+        end
+        if typeof(ToggleFly) == "function" then ToggleFly(Settings.FlyEnabled) end
+        if typeof(ToggleFling) == "function" then ToggleFling(Settings.TouchFlingEnabled) end
+        if typeof(ToggleAntiFling) == "function" then ToggleAntiFling(Settings.AntiFlingEnabled) end
+        if typeof(ToggleInstantInteract) == "function" then ToggleInstantInteract(Settings.InstantInteractEnabled) end
+        if typeof(ToggleZoomUnlocker) == "function" then ToggleZoomUnlocker(Settings.ZoomUnlockerEnabled) end
+        if typeof(ToggleAntiTouch) == "function" then ToggleAntiTouch(Settings.AntiTouchEnabled) end
+        if typeof(ToggleAntiScreenShake) == "function" then ToggleAntiScreenShake(Settings.AntiScreenShakeEnabled) end
+        if typeof(ToggleMapCleaner) == "function" and Settings.MapCleanerEnabled then ToggleMapCleaner(true) end
+        if typeof(ToggleFPSBooster) == "function" and Settings.FPSBoosterEnabled then ToggleFPSBooster(true) end
+        if typeof(ToggleRemoveBlur) == "function" and Settings.RemoveBlurEnabled then ToggleRemoveBlur(true) end
+        if typeof(ToggleHitboxExpander) == "function" then ToggleHitboxExpander(Settings.HitboxExpanderEnabled) end
+        if typeof(ToggleClickToFling) == "function" then ToggleClickToFling(Settings.ClickToFlingEnabled) end
+        if RadarFrame then RadarFrame.Visible = Settings.RadarEnabled end
+        if typeof(SetupAimbot) == "function" then SetupAimbot() end
+    end)
+end
+
+LoadConfig()
 
 local function QueueTeleport()
-    if not Settings or not Settings.AutoReExecuteEnabled then return end
+    if not Settings.AutoReExecuteEnabled then return end
     local URL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
     if URL == "" or not URL:find("http") then return end
     
@@ -26,10 +201,8 @@ end
 task.spawn(function()
     repeat task.wait() until Players.LocalPlayer
     Players.LocalPlayer.OnTeleport:Connect(function(state)
-        if Settings and Settings.AutoReExecuteEnabled then
-            print("[Diablo Hub] Teleport detected via OnTeleport!")
-            QueueTeleport()
-        end
+        print("[Diablo Hub] Teleport detected via OnTeleport!")
+        QueueTeleport()
     end)
 end)
 
@@ -39,10 +212,8 @@ setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if self == TeleportService and (method == "Teleport" or method == "TeleportToPlaceInstance" or method == "TeleportToSpawnPoint") then
-        if Settings and Settings.AutoReExecuteEnabled then
-            print("[Diablo Hub] Teleport detected via __namecall!")
-            QueueTeleport()
-        end
+        print("[Diablo Hub] Teleport detected via __namecall!")
+        QueueTeleport()
     end
     return old(self, ...)
 end)
@@ -51,13 +222,6 @@ setreadonly(mt, true)
 if getgenv().DiabloHubLoaded then return end
 getgenv().DiabloHubLoaded = true
 
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local Lighting = game:GetService("Lighting")
-local HttpService = game:GetService("HttpService")
-local ProximityPromptService = game:GetService("ProximityPromptService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local StartTime = os.clock()
@@ -1013,81 +1177,6 @@ function Library:CreateWindow(ArgSettings)
     end
     return Library
 end
-Settings = {
-    AutoReExecuteEnabled = true,
-    FullbrightEnabled = false,
-    TPWalkEnabled = false,
-    TPWalkSpeed = 1,
-    NoClipEnabled = false,
-    InfiniteJumpEnabled = false,
-    ESPEnabled = false,
-    ESPV2Enabled = false,
-    ESPTeamCheck = false,
-    TouchFlingEnabled = false,
-    AntiFlingEnabled = false,
-    InstantInteractEnabled = false,
-    AntiAFKEnabled = false,
-    FlyEnabled = false,
-    FlySpeed = 1,
-    AntiTouchEnabled = false,
-    AntiScreenShakeEnabled = false,
-    ClickToFlingEnabled = false,
-    ZoomUnlockerEnabled = false,
-    MaxZoomDistance = 500,
-    AutoRespawnTPEnabled = false,
-    HitboxExpanderEnabled = false,
-    HitboxSize = 2,
-    HitboxTeamCheck = false,
-    HitboxIgnoreList = {},
-    WhitelistNames = {"pondthzaza0", "kaitunpond44", "pond4925"},
-    AllyNames = {"kaitunpond44", "gumilk254300", "your0nlywin", "pondthzaza0", "pond4925"},
-    WalkOnWaterEnabled = false,
-    MapCleanerEnabled = false,
-    FreecamEnabled = false,
-    FreecamSpeed = 1,
-    FPSBoosterEnabled = false,
-    RemoveBlurEnabled = false,
-    FPSBoosterCache = {},
-    OriginalValuesSaved = false,
-    OriginalAmbient = nil,
-    OriginalBrightness = nil,
-    OriginalClockTime = nil,
-    OriginalFogEnd = nil,
-    OriginalFogStart = nil,
-    OriginalOutdoorAmbient = nil,
-    OriginalAtmosphere = nil,
-    OriginalEffects = {},
-    ToggleUIKey = Enum.KeyCode.RightControl,
-    Waypoints = {},
-
-    AutoReExecuteEnabled = true,
-    AimbotEnabled = false,
-    AimbotPart = "Head",
-    AimbotFOV = 100,
-    AimbotSmoothness = 0.5,
-    AimbotTeamCheck = false,
-    AimbotShowFOV = false,
-    AimbotKey = Enum.UserInputType.MouseButton2,
-    AimbotWallCheck = true,
-    AimbotPrediction = false,
-    AimbotSmartTarget = false,
-
-    TriggerBotV1Enabled = false,
-    TriggerBotV2Enabled = false,
-    TriggerBotTeamCheck = false,
-
-    RadarEnabled = false,
-    RadarRange = 250,
-    RadarSize = 150,
-    RadarTeamCheck = true
-}
-local espConnections = {}
-local TPWalkConnection = nil
-local NoClipConnection = nil
-local InfiniteJumpConnection = nil
-local FolderName = "Diablo Script"
-local ConfigName = "config.json"
-local UIElements = {}
 local RadarFrame = nil
 local function ToggleFly(state)
     Settings.FlyEnabled = state
@@ -2153,7 +2242,7 @@ local function SetFullbright(enable)
                 FullbrightConnection = nil
                 return
             end
-            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+             Lighting.Ambient = Color3.fromRGB(255, 255, 255)
             Lighting.Brightness = 2
             Lighting.ClockTime = 14
             Lighting.FogEnd = 1000000
@@ -2288,91 +2377,117 @@ local function ToggleZoomUnlocker(state)
         LocalPlayer.CameraMaxZoomDistance = 128
     end
 end
-local function SaveConfig(silent)
-    if not isfolder(FolderName) then
-        makefolder(FolderName)
-    end
-    local ConfigData = {}
-    for key, value in pairs(Settings) do
-        if typeof(value) == "EnumItem" then
-            ConfigData[key] = {Type = "Enum", Value = value.Name, EnumType = tostring(value.EnumType)}
-        elseif typeof(value) == "Color3" then
-            ConfigData[key] = {Type = "Color3", r = value.r, g = value.g, b = value.b}
-        else
-            ConfigData[key] = value
-        end
-    end
-    writefile(FolderName .. "/" .. ConfigName, HttpService:JSONEncode(ConfigData))
-    if not silent then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Diablo Hub",
-            Text = "Config Saved successfully! 💾",
-            Duration = 3
-        })
-    end
-end
-local function LoadConfig()
-    if isfile(FolderName .. "/" .. ConfigName) then
-        local raw = readfile(FolderName .. "/" .. ConfigName)
-        local success, decoded = pcall(function() return HttpService:JSONDecode(raw) end)
-        if success and type(decoded) == "table" then
-            for key, data in pairs(decoded) do
-                if type(data) == "table" and data.Type == "Enum" then
-                    pcall(function()
-                        local enumGroup = data.EnumType:gsub("Enum.", "")
-                        Settings[key] = Enum[enumGroup][data.Value]
-                    end)
-                elseif type(data) == "table" and data.Type == "Color3" then
-                    Settings[key] = Color3.new(data.r, data.g, data.b)
-                elseif type(data) == "string" and (key == "ToggleUIKey" or key == "AimbotKey") then
-                    pcall(function()
-                        if pcall(function() return Enum.KeyCode[data] end) then
-                            Settings[key] = Enum.KeyCode[data]
-                        elseif pcall(function() return Enum.UserInputType[data] end) then
-                            Settings[key] = Enum.UserInputType[data]
-                        end
-                    end)
-                else
-                    Settings[key] = data
-                end
-            end
-            for key, element in pairs(UIElements) do
-                if Settings[key] ~= nil and element and type(element) == "table" and element.Set then
-                    element.Set(Settings[key])
-                end
-            end
-            task.spawn(function()
-                SetFullbright(Settings.FullbrightEnabled)
-                SetupNoClip()
-                SetupInfiniteJump()
-                ToggleAntiAFK(Settings.AntiAFKEnabled)
-                SetupTPWalk()
-                if Settings.ESPEnabled or Settings.ESPV2Enabled then enableESP() else disableESP() end
-                ToggleFly(Settings.FlyEnabled)
-                ToggleFling(Settings.TouchFlingEnabled)
-                ToggleAntiFling(Settings.AntiFlingEnabled)
-                ToggleInstantInteract(Settings.InstantInteractEnabled)
-                ToggleZoomUnlocker(Settings.ZoomUnlockerEnabled)
-                ToggleAntiTouch(Settings.AntiTouchEnabled)
-                ToggleAntiScreenShake(Settings.AntiScreenShakeEnabled)
-                if Settings.MapCleanerEnabled then ToggleMapCleaner(true) end
-                if Settings.FPSBoosterEnabled then ToggleFPSBooster(true) end
-                if Settings.RemoveBlurEnabled then ToggleRemoveBlur(true) end
-                ToggleHitboxExpander(Settings.HitboxExpanderEnabled)
-                ToggleClickToFling(Settings.ClickToFlingEnabled)
-                RadarFrame.Visible = Settings.RadarEnabled
-                SetupAimbot()
-            end)
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Diablo Hub",
-                Text = "Config Loaded successfully! 📂",
-                Duration = 3
-            })
+
+local function IsVisible(target, part)
+    if not Settings.AimbotWallCheck then return true end
+    local origin = workspace.CurrentCamera.CFrame.Position
+    local direction = part.Position - origin
+    local ray = Ray.new(origin, direction)
+    local ignore = {LocalPlayer.Character, workspace.CurrentCamera}
+    
+    local hit, pos = workspace:FindPartOnRayWithIgnoreList(ray, ignore)
+    if hit then
+        if hit:IsDescendantOf(target.Character) then
             return true
         end
+        return false
     end
-    return false
+    return true
 end
+
+local function GetClosestPlayer()
+    local closest = nil
+    local shortestDist = Settings.AimbotFOV
+    local mousePos = UserInputService:GetMouseLocation()
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            if Settings.AimbotTeamCheck and player.Team == LocalPlayer.Team then continue end
+
+            local isWhitelisted = false
+            for _, name in pairs(Settings.WhitelistNames) do
+                if player.Name == name then isWhitelisted = true break end
+            end
+            if isWhitelisted then continue end
+
+            local partsToScan = {Settings.AimbotPart}
+            if Settings.AimbotSmartTarget then
+                partsToScan = {"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}
+            end
+
+            for _, partName in ipairs(partsToScan) do
+                local part = player.Character:FindFirstChild(partName)
+                if part then
+                    local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                        if dist < shortestDist then
+                            if IsVisible(player, part) then
+                                shortestDist = dist
+                                closest = player
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function SetupAimbot()
+    RunService.RenderStepped:Connect(function()
+        if not typeof(AimbotFOVCircle) == "table" then return end
+        AimbotFOVCircle.Radius = Settings.AimbotFOV
+        AimbotFOVCircle.Visible = Settings.AimbotShowFOV and Settings.AimbotEnabled
+        AimbotFOVCircle.Position = UserInputService:GetMouseLocation()
+        
+        local isAiming = false
+        if Settings.AimbotEnabled then
+            if typeof(Settings.AimbotKey) == "EnumItem" then
+                if Settings.AimbotKey.EnumType == Enum.UserInputType then
+                    isAiming = UserInputService:IsMouseButtonPressed(Settings.AimbotKey)
+                elseif Settings.AimbotKey.EnumType == Enum.KeyCode then
+                    isAiming = UserInputService:IsKeyDown(Settings.AimbotKey)
+                end
+            end
+        end
+
+        if isAiming then
+            local target = GetClosestPlayer()
+            if target and target.Character then
+                local partsToScan = {Settings.AimbotPart}
+                if Settings.AimbotSmartTarget then
+                    partsToScan = {"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}
+                end
+                
+                local targetPart = nil
+                for _, partName in ipairs(partsToScan) do
+                    local part = target.Character:FindFirstChild(partName)
+                    if part and IsVisible(target, part) then
+                        targetPart = part
+                        break
+                    end
+                end
+                
+                if targetPart then
+                    local targetPos = targetPart.Position
+                    if Settings.AimbotPrediction then
+                        local distance = (workspace.CurrentCamera.CFrame.Position - targetPos).Magnitude
+                        local velocity = targetPart.Velocity
+                        local predictionStrength = distance / 1000 
+                        targetPos = targetPos + (velocity * predictionStrength)
+                    end
+                    
+                    local currentCFrame = workspace.CurrentCamera.CFrame
+                    local goalCFrame = CFrame.new(currentCFrame.Position, targetPos)
+                    workspace.CurrentCamera.CFrame = currentCFrame:Lerp(goalCFrame, Settings.AimbotSmoothness)
+                end
+            end
+        end
+    end)
+end
+
 local Window = Library:CreateWindow({
     Name = "Diablo Hub"
 })
@@ -3351,20 +3466,12 @@ task.spawn(function()
         LocalPlayer.CharacterAdded:Wait()
     end
     task.wait(1)
-    if LoadConfig() then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Diablo Script",
-            Text = "Settings Auto-Loaded! ⚡",
-            Duration = 5
-        })
-    else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Diablo Script",
-            Text = "Welcome! (No Config Found)",
-            Duration = 5
-        })
-    end
+    SyncUIElements()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Diablo Script",
+        Text = "Settings Auto-Loaded! ⚡",
+        Duration = 5
+    })
 end)
-
 
 return Library
