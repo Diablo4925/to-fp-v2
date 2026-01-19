@@ -1,31 +1,32 @@
-if getgenv().DiabloHubLoaded then return end
-getgenv().DiabloHubLoaded = true
-
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 
 local function QueueTeleport()
+    if not Settings.AutoReExecuteEnabled then return end
     local URL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
-    if URL == "ใส่_URL_สคริปต์_ของคุณที่นี่" or URL == "" or not URL:find("http") then return end
-    
-    local code = string.format([[
-        repeat task.wait() until game:IsLoaded()
-        local success, result = pcall(function()
-            return loadstring(game:HttpGet("%s"))()
-        end)
-        if not success then warn("Diablo Hub Auto-Exec Error:", result) end
-    ]], URL)
+    if URL == "" or not URL:find("http") then return end
     
     local queue = queue_on_teleport or (syn and syn.queue_on_teleport)
-    if queue then queue(code) end
+    if queue then
+        print("[Diablo Hub] Queuing teleport re-execution...")
+        local code = [[
+            repeat task.wait() until game:IsLoaded()
+            local lp = game:GetService("Players").LocalPlayer
+            repeat task.wait() until lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+            print("[Diablo Hub] Character loaded! Auto Re-executed."); 
+            loadstring(game:HttpGet("]]..URL..[["))()
+        ]]
+        queue(code)
+    else
+        warn("[Diablo Hub] Executor does not support queue_on_teleport!")
+    end
 end
 
 task.spawn(function()
     repeat task.wait() until Players.LocalPlayer
     Players.LocalPlayer.OnTeleport:Connect(function(state)
-        if state == Enum.TeleportState.InProgress then
-            QueueTeleport()
-        end
+        print("[Diablo Hub] Teleport detected via OnTeleport!")
+        QueueTeleport()
     end)
 end)
 
@@ -35,11 +36,15 @@ setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if self == TeleportService and (method == "Teleport" or method == "TeleportToPlaceInstance" or method == "TeleportToSpawnPoint") then
+        print("[Diablo Hub] Teleport detected via __namecall!")
         QueueTeleport()
     end
     return old(self, ...)
 end)
 setreadonly(mt, true)
+
+if getgenv().DiabloHubLoaded then return end
+getgenv().DiabloHubLoaded = true
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -1052,6 +1057,7 @@ Settings = {
     ToggleUIKey = Enum.KeyCode.RightControl,
     Waypoints = {},
 
+    AutoReExecuteEnabled = true,
     AimbotEnabled = false,
     AimbotPart = "Head",
     AimbotFOV = 100,
@@ -3314,8 +3320,14 @@ SettingsTab:Button("Load Config 📂", function()
 end)
 
 SettingsTab:Section("Keybinds ⌨️")
-UIElements.ToggleUIKey = SettingsTab:Keybind("Toggle UI Key 🔓", Settings.ToggleUIKey, function(key)
+SettingsTab:Keybind("Toggle UI Key 🔓", Settings.ToggleUIKey, function(key)
     Settings.ToggleUIKey = key
+    SaveConfig(true)
+end)
+
+SettingsTab:Section("Experimental 🧪")
+UIElements.AutoReExecute = SettingsTab:Toggle("Auto Re-Execute 🔄", Settings.AutoReExecuteEnabled, function(state)
+    Settings.AutoReExecuteEnabled = state
     SaveConfig(true)
 end)
 
