@@ -1033,6 +1033,8 @@ Settings = {
     TriggerBotV2Enabled = false,
     TriggerBotTeamCheck = false,
 
+    SpinBotEnabled = false,
+    SpinBotSpeed = 50,
     RadarEnabled = false,
     RadarRange = 250,
     RadarSize = 150,
@@ -1099,6 +1101,30 @@ local function ToggleFly(state)
             end
             local humanoid = character:FindFirstChild("Humanoid")
             if humanoid then humanoid.PlatformStand = false end
+        end
+    end
+end
+local SpinBotConnection = nil
+local function ToggleSpinBot(state)
+    Settings.SpinBotEnabled = state
+    if state then
+        if SpinBotConnection then SpinBotConnection:Disconnect() end
+        SpinBotConnection = RunService.Heartbeat:Connect(function()
+            if not Settings.SpinBotEnabled then 
+                if SpinBotConnection then SpinBotConnection:Disconnect() end
+                SpinBotConnection = nil
+                return 
+            end
+            local character = LocalPlayer.Character
+            local root = character and character:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(Settings.SpinBotSpeed), 0)
+            end
+        end)
+    else
+        if SpinBotConnection then
+            SpinBotConnection:Disconnect()
+            SpinBotConnection = nil
         end
     end
 end
@@ -2317,6 +2343,7 @@ local function LoadConfig()
                 if Settings.RemoveBlurEnabled then ToggleRemoveBlur(true) end
                 ToggleHitboxExpander(Settings.HitboxExpanderEnabled)
                 ToggleClickToFling(Settings.ClickToFlingEnabled)
+                ToggleSpinBot(Settings.SpinBotEnabled)
                 RadarFrame.Visible = Settings.RadarEnabled
                 SetupAimbot()
             end)
@@ -2979,6 +3006,16 @@ UIElements.AutoRespawnTPEnabled = MovementTab:Toggle("Auto Tp Last Death ♻️"
 end)
 MovementTab:Button("TP to Last Death 💀", function()
     TeleportToLastDeath()
+end)
+
+MovementTab:Section("Spin Bot 🌪️")
+UIElements.SpinBotEnabled = MovementTab:Toggle("Enable Spin Bot 🌪️", Settings.SpinBotEnabled, function(state)
+    ToggleSpinBot(state)
+    SaveConfig(true)
+end)
+UIElements.SpinBotSpeed = MovementTab:NumberInput("Spin Speed 🚄", Settings.SpinBotSpeed, function(value)
+    Settings.SpinBotSpeed = value
+    SaveConfig(true)
 end)
 
 local WaypointTab = Window:Tab("Waypoints 📍")
