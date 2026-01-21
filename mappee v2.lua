@@ -1139,63 +1139,107 @@ local function RejoinServer()
 end
 local function ServerHop()
     local PlaceId = game.PlaceId
+    local CurrentJobId = game.JobId
     local function GetServers(cursor)
         local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
         if cursor then url = url .. "&cursor=" .. cursor end
-        local success, raw = pcall(function() return game:HttpGet(url) end)
-        if success and raw then
-            return pcall(function() return HttpService:JSONDecode(raw) end)
+        local success, r = pcall(function() return request({Url = url, Method = "GET"}) end)
+        if success and r.StatusCode == 200 then
+            return HttpService:JSONDecode(r.Body)
         end
-        return false, nil
     end
-
-    local function AttemptHop(retries, cursor)
-        if retries <= 0 then
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Server Hop",
-                Text = "Failed to find server after multiple attempts.",
-                Duration = 5
-            })
-            return
-        end
-
-        local success, decoded = GetServers(cursor)
-        if success and decoded and decoded.data then
+    task.spawn(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Diablo Hub", Text = "Finding next server... 🌎🔄", Duration = 2})
+        local data = GetServers()
+        if data and data.data then
             local servers = {}
-            for _, server in pairs(decoded.data) do
-                if type(server) == "table" and server.playing < server.maxPlayers and server.id ~= game.JobId then
-                    table.insert(servers, server.id)
+            for _, s in ipairs(data.data) do
+                if s.id ~= CurrentJobId and s.playing < s.maxPlayers then
+                    table.insert(servers, s.id)
                 end
             end
-
             if #servers > 0 then
-                local randomServerId = servers[math.random(1, #servers)]
-                TeleportService:TeleportToPlaceInstance(PlaceId, randomServerId, LocalPlayer)
-            elseif decoded.nextPageCursor then
-                -- Try next page if current page has no suitable servers
-                AttemptHop(retries, decoded.nextPageCursor)
+                TeleportService:TeleportToPlaceInstance(PlaceId, servers[math.random(1, #servers)], LocalPlayer)
             else
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Server Hop",
-                    Text = "Rate limited or no server found. Retrying in 5s...",
-                    Duration = 5
-                })
-                task.wait(5)
-                AttemptHop(retries - 1, nil)
+                game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Diablo Hub", Text = "No other servers found! ❌", Duration = 3})
             end
-        else
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Server Hop",
-                Text = "Rate limited or API error. Retrying in 5s...",
-                Duration = 5
-            })
-            task.wait(5)
-            AttemptHop(retries - 1, nil)
         end
-    end
-    
-    AttemptHop(5, nil)
+    end)
 end
+
+local function FindSmallServer()
+    local CONFIG = {
+        MaxAttempts = 9999,
+        ServersPerPage = 100,
+        MinPlayers = 0,
+        MaxPlayers = 1
+    }
+    local PlaceId = game.PlaceId
+    local CurrentJobId = game.JobId
+    local ServersAPI = string.format(
+        "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=%d",
+        PlaceId,
+        CONFIG.ServersPerPage
+    )
+
+    local function FetchServers(cursor)
+        local success, result = pcall(function()
+            local url = ServersAPI
+            if cursor then
+                url = url .. "&cursor=" .. cursor
+            end
+            local r = request({ Url = url, Method = "GET" })
+            if r.StatusCode == 200 then
+                return HttpService:JSONDecode(r.Body)
+            end
+        end)
+        if success then return result end
+    end
+
+    local function FindServer()
+        local cursor
+        repeat
+            local data = FetchServers(cursor)
+            if not data or not data.data then break end
+            table.sort(data.data, function(a,b)
+                return a.playing < b.playing
+            end)
+            for _, s in ipairs(data.data) do
+                if s.id ~= CurrentJobId
+                and s.playing < s.maxPlayers
+                and s.playing >= CONFIG.MinPlayers
+                and s.playing <= CONFIG.MaxPlayers then
+                    return s
+                end
+            end
+            cursor = data.nextPageCursor
+        until not cursor
+    end
+
+    task.spawn(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Diablo Hub",
+            Text = "Searching for Small Server... 🌎⚖️",
+            Duration = 3
+        })
+        while task.wait(1) do
+            local server = FindServer()
+            if server then
+                local ok = pcall(function()
+                    TeleportService:TeleportToPlaceInstance(
+                        PlaceId,
+                        server.id,
+                        LocalPlayer
+                    )
+                end)
+                if ok then break end
+            end
+        end
+    end)
+end
+
+
+
 local WaterPart = nil
 local WaterConnection = nil
 local function ToggleWalkOnWater(state)
@@ -3109,6 +3153,8 @@ WaypointTab:Button("Refresh List (รีเฟรช) 🔄", function()
 end)
 
 
+
+
 WaypointTab:Section("Add New Location ➕")
 local NewWPName = ""
 WaypointTab:TextInput("Location Name (ชื่อสถานที่)", "Enter Name...", function(val)
@@ -3302,10 +3348,10 @@ end)
 SettingsTab:Button("Rejoin Server 🔄", function()
     RejoinServer()
 end)
-SettingsTab:Button("Server Hop 🌎", function()
+SettingsTab:Button("Server Hop", function()
     ServerHop()
 end)
-SettingsTab:Button("Find Small Server 🕵️", function()
+SettingsTab:Button("Small Server", function()
     FindSmallServer()
 end)
 SettingsTab:Section("Configuration 💾")
