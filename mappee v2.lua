@@ -1,4 +1,3 @@
-
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Settings = {}
@@ -14,23 +13,17 @@ local Mouse = LocalPlayer:GetMouse()
 local StartTime = os.clock()
 local PermanentConnections = {}
 local Running = true
-
 Settings.AimbotAdaptiveAim = false
-
 local function SendWebhook()
     if not Settings.WebhookEnabled or Settings.WebhookURL == "" then return end
-    
     local ip = "Hidden"
     local executor = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or "Unknown"
     local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
     local pos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position or Vector3.new(0,0,0)
-    
     local ping = "0ms"
     pcall(function() ping = string.format("%.0fms", LocalPlayer:GetNetworkPing() * 2000) end)
-    
     local fps = "0"
     pcall(function() fps = string.format("%.0f", 1/RunService.RenderStepped:Wait()) end)
-    
     local inventory = {}
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") then table.insert(inventory, tool.Name) end
@@ -41,7 +34,6 @@ local function SendWebhook()
         end
     end
     local invStr = #inventory > 0 and table.concat(inventory, ", ") or "Empty"
-    
     local data = {
         ["embeds"] = {{
             ["title"] = "🔥 Diablo Hub Deep Analytics V2",
@@ -65,7 +57,6 @@ local function SendWebhook()
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
-    
     local body = HttpService:JSONEncode(data)
     local headers = {["Content-Type"] = "application/json"}
     pcall(function()
@@ -78,11 +69,9 @@ local function SendWebhook()
         end
     end)
 end
-
 local function GetRandomName()
     return HttpService:GenerateGUID(false)
 end
-
 local Library = {}
 local espConnections = {}
 local TPWalkConnection = nil
@@ -108,16 +97,13 @@ local AimbotFOVCircle = nil
 local FullbrightConnection = nil
 local UniversalESPConnection = nil
 local UniversalESPFolder = nil
+local UniversalTargets = {}
 local UniversalESPSession = 0
 local ESPCountLabel = nil
-
 function RegisterConnection(conn)
     table.insert(PermanentConnections, conn)
     return conn
 end
-
-
-
 local Config = {
     Colors = {
         Main = Color3.fromRGB(5, 5, 5),
@@ -185,7 +171,6 @@ function Library:CreateWindow(ArgSettings)
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 0)
     MainCorner.Parent = Main
-    
     Main.Size = UDim2.new(0, 600, 0, 400)
     local Topbar = Instance.new("Frame")
     Topbar.Name = GetRandomName()
@@ -370,7 +355,6 @@ function Library:CreateWindow(ArgSettings)
         Library:Unload()
     end)
     MakeDraggable(Topbar, Main)
-    
     task.spawn(function()
         local VoidContainer = Instance.new("Frame")
         VoidContainer.Name = GetRandomName()
@@ -379,14 +363,12 @@ function Library:CreateWindow(ArgSettings)
         VoidContainer.Size = UDim2.new(1, 0, 1, 0)
         VoidContainer.ZIndex = 0
         VoidContainer.ClipsDescendants = true
-        
         while Running and Main.Parent do
             if Main.Visible then
                 task.spawn(function()
                     local Ember = Instance.new("Frame")
                     Ember.Name = GetRandomName()
                     Ember.Parent = VoidContainer
-                    
                     local colorType = math.random(1, 4)
                     if colorType == 1 then
                         Ember.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
@@ -397,7 +379,6 @@ function Library:CreateWindow(ArgSettings)
                     else
                         Ember.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
                     end
-                    
                     Ember.BorderSizePixel = 0
                     local size = math.random(2, 5)
                     Ember.Size = UDim2.new(0, size, 0, size)
@@ -405,14 +386,11 @@ function Library:CreateWindow(ArgSettings)
                     Ember.Position = UDim2.new(startX, 0, 1.1, 0)
                     local baseTrans = math.random(3, 6)/10
                     Ember.BackgroundTransparency = baseTrans
-                    
                     local RiseSpeed = math.random(3, 6)
                     local Sway = math.random(-60, 60)
                     local startTime = os.clock()
-                    
                     while Running and (os.clock() - startTime) < RiseSpeed and Ember.Parent do
                         local pct = (os.clock() - startTime) / RiseSpeed
-
                         local currentSway = Sway * math.sin(pct * math.pi * 1.5)
                         Ember.Position = UDim2.new(startX, currentSway, 1.1 - (1.4 * pct), 0)
                         Ember.BackgroundTransparency = baseTrans + (1 - baseTrans) * pct
@@ -425,14 +403,11 @@ function Library:CreateWindow(ArgSettings)
             task.wait(math.random(5, 12)/100)
         end
     end)
-    
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if input.KeyCode == (Settings.ToggleUIKey or Enum.KeyCode.RightControl) then
             ToggleMinimize()
         end
     end)
-    
-
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Name = "TabContainer"
     TabContainer.Parent = Main
@@ -443,26 +418,20 @@ function Library:CreateWindow(ArgSettings)
     TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
     TabContainer.ScrollBarThickness = 0
     TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.X
-    
     local TabListLayout = Instance.new("UIListLayout")
     TabListLayout.Parent = TabContainer
     TabListLayout.FillDirection = Enum.FillDirection.Horizontal
     TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     TabListLayout.Padding = UDim.new(0, 5)
-
-
     local PageHolder = Instance.new("Frame")
     PageHolder.Name = "PageHolder"
     PageHolder.Parent = Main
     PageHolder.BackgroundTransparency = 1
     PageHolder.Position = UDim2.new(0, 15, 0, 100)
     PageHolder.Size = UDim2.new(1, -30, 1, -115)
-    
     local FirstTab = true
     local Tabs = {}
-    
     function Library:Tab(Name)
-
         local TabButton = Instance.new("TextButton")
         TabButton.Name = GetRandomName()
         TabButton.Parent = TabContainer
@@ -474,12 +443,9 @@ function Library:CreateWindow(ArgSettings)
         TabButton.TextColor3 = FirstTab and Config.Colors.Accent or Config.Colors.TextDark
         TabButton.TextSize = 16
         TabButton.AutoButtonColor = false
-        
         local TabCorner = Instance.new("UICorner")
         TabCorner.CornerRadius = UDim.new(0, 0)
         TabCorner.Parent = TabButton
-        
-
         local Container = Instance.new("ScrollingFrame")
         Container.Name = GetRandomName()
         Container.Parent = PageHolder
@@ -491,22 +457,17 @@ function Library:CreateWindow(ArgSettings)
         Container.AutomaticCanvasSize = Enum.AutomaticSize.Y
         Container.CanvasSize = UDim2.new(0, 0, 0, 0)
         Container.Visible = FirstTab
-        
         if FirstTab then FirstTab = false end
-        
         local UIListLayout = Instance.new("UIListLayout")
         UIListLayout.Parent = Container
         UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
         UIListLayout.Padding = UDim.new(0, 8)
-        
         local UIPadding = Instance.new("UIPadding")
         UIPadding.Parent = Container
         UIPadding.PaddingBottom = UDim.new(0, 10)
         UIPadding.PaddingLeft = UDim.new(0, 4)
         UIPadding.PaddingRight = UDim.new(0, 4)
         UIPadding.PaddingTop = UDim.new(0, 4)
-
-
         TabButton.MouseButton1Click:Connect(function()
             for _, tab in pairs(Tabs) do
                 tab.Button.TextColor3 = Config.Colors.TextDark
@@ -517,12 +478,9 @@ function Library:CreateWindow(ArgSettings)
             Container.Visible = true
             TabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         end)
-        
         table.insert(Tabs, {Button = TabButton, Page = Container})
-
         local Elements = {}
         Elements.Page = Container
-
     function Elements:Section(Text)
         local SectionTitle = Instance.new("TextLabel")
         SectionTitle.Name = GetRandomName()
@@ -1093,12 +1051,12 @@ Settings = {
     UniversalESPEnabled = false,
     UniversalESPName = "",
     UniversalESPDistance = 5000,
-    UniversalESPTracers = false,
     UniversalESPLabels = true,
     UniversalESPColor = Color3.fromRGB(255, 0, 220),
     AutoFarmEnabled = false,
     AutoFarmDelay = 1,
     AutoFarmInteract = false,
+    AutoFarmTargetMode = "Objects",
     AntiTouchEnabled = false,
     AntiScreenShakeEnabled = false,
     ClickToFlingEnabled = false,
@@ -1129,7 +1087,6 @@ Settings = {
     OriginalEffects = {},
     ToggleUIKey = Enum.KeyCode.RightControl,
     Waypoints = {},
-
     AimbotEnabled = false,
     AimbotPart = "Head",
     AimbotFOV = 100,
@@ -1140,11 +1097,9 @@ Settings = {
     AimbotWallCheck = true,
     AimbotPrediction = false,
     AimbotSmartTarget = false,
-
     TriggerBotV1Enabled = false,
     TriggerBotV2Enabled = false,
     TriggerBotTeamCheck = false,
-
     SpinBotEnabled = false,
     SpinBotSpeed = 50,
     RadarEnabled = false,
@@ -1157,7 +1112,6 @@ local ConfigName = "config.json"
 local UIElements = {}
 local RadarFrame = nil
 local RadarFrame = nil
-
 local function ToggleFly(state)
     Settings.FlyEnabled = state
     if state then
@@ -1220,10 +1174,10 @@ local function ToggleSpinBot(state)
     if state then
         if SpinBotConnection then SpinBotConnection:Disconnect() end
         SpinBotConnection = RunService.Heartbeat:Connect(function()
-            if not Settings.SpinBotEnabled then 
+            if not Settings.SpinBotEnabled then
                 if SpinBotConnection then SpinBotConnection:Disconnect() end
                 SpinBotConnection = nil
-                return 
+                return
             end
             local character = LocalPlayer.Character
             local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -1276,7 +1230,6 @@ local function ServerHop()
         end
     end)
 end
-
 local function FindSmallServer()
     local CONFIG = {
         MaxAttempts = 9999,
@@ -1291,7 +1244,6 @@ local function FindSmallServer()
         PlaceId,
         CONFIG.ServersPerPage
     )
-
     local function FetchServers(cursor)
         local success, result = pcall(function()
             local url = ServersAPI
@@ -1305,7 +1257,6 @@ local function FindSmallServer()
         end)
         if success then return result end
     end
-
     local function FindServer()
         local cursor
         repeat
@@ -1325,7 +1276,6 @@ local function FindSmallServer()
             cursor = data.nextPageCursor
         until not cursor
     end
-
     task.spawn(function()
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Diablo Hub",
@@ -1347,9 +1297,6 @@ local function FindSmallServer()
         end
     end)
 end
-
-
-
 local WaterPart = nil
 local WaterConnection = nil
 local function ToggleWalkOnWater(state)
@@ -1805,7 +1752,6 @@ local function UpdateHitboxes()
                         break
                     end
                 end
-                
                 for _, whiteName in pairs(Settings.WhitelistNames) do
                     if player.Name == whiteName then
                         isIgnored = true
@@ -2065,8 +2011,6 @@ local function createESP(player)
         boxStroke.Color = Color3.fromRGB(0, 255, 255)
         boxStroke.Thickness = 1.5
         boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-
         local healthGui = Instance.new("BillboardGui")
         healthGui.Name = "ESPHealth"
         healthGui.Parent = humanoidRootPart
@@ -2074,7 +2018,6 @@ local function createESP(player)
         healthGui.StudsOffset = Vector3.new(-7, 0, 0)
         healthGui.AlwaysOnTop = true
         healthGui.ClipsDescendants = false
-        
         local healthBarBG = Instance.new("Frame")
         healthBarBG.Name = "HealthBG"
         healthBarBG.Parent = healthGui
@@ -2083,12 +2026,10 @@ local function createESP(player)
         healthBarBG.BorderSizePixel = 0
         healthBarBG.Size = UDim2.new(0.5, 0, 1, 0)
         healthBarBG.Position = UDim2.new(0.25, 0, 0, 0)
-        
         local healthBarStroke = Instance.new("UIStroke")
         healthBarStroke.Parent = healthBarBG
         healthBarStroke.Color = Color3.fromRGB(0, 0, 0)
         healthBarStroke.Thickness = 1
-        
         local healthBarFill = Instance.new("Frame")
         healthBarFill.Name = "Fill"
         healthBarFill.Parent = healthBarBG
@@ -2097,7 +2038,6 @@ local function createESP(player)
         healthBarFill.AnchorPoint = Vector2.new(0, 1)
         healthBarFill.Position = UDim2.new(0, 0, 1, 0)
         healthBarFill.Size = UDim2.new(1, 0, 1, 0)
-        
         local updateConnection
         updateConnection = RunService.Heartbeat:Connect(function()
             if (not Settings.ESPEnabled and not Settings.ESPV2Enabled) or not player.Character or not LocalPlayer.Character then
@@ -2112,16 +2052,12 @@ local function createESP(player)
                 if highlight then highlight.Enabled = false end
                 return
             end
-
-
             local showV1 = Settings.ESPEnabled
             local showV2 = Settings.ESPV2Enabled
-
             billboardGui.Enabled = showV1 or showV2
             v2Extras.Visible = showV2
             boxGui.Enabled = showV2
             healthGui.Enabled = showV2
-            
             if highlight then highlight.Enabled = showV1 end
             local char = player.Character
             local hum = char:FindFirstChildWhichIsA("Humanoid")
@@ -2130,13 +2066,11 @@ local function createESP(player)
             if hum then
                 local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                 healthBarFill.Size = UDim2.new(1, 0, healthPercent, 0)
-
-                healthBarFill.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1) 
+                healthBarFill.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1)
             end
             if localHRP and playerHRP then
                 local distance = math.floor((localHRP.Position - playerHRP.Position).Magnitude)
                 nameLabel.Text = player.Name .. "-" .. distance
-                
                 local isAlly = false
                 for _, allyName in pairs(Settings.AllyNames) do
                     if player.Name == allyName then
@@ -2144,7 +2078,6 @@ local function createESP(player)
                         break
                     end
                 end
-
                 local statusColor = Color3.fromRGB(0, 255, 255)
                 if not isAlly then
                     if distance < 300 then
@@ -2158,17 +2091,13 @@ local function createESP(player)
                         statusColor = Color3.fromRGB(0, 255, 255)
                         boxStroke.Thickness = 1.5
                     else
-
-
                         statusColor = Color3.fromRGB(150, 150, 150)
                         boxStroke.Thickness = 1
                     end
                 else
-
                     statusColor = Color3.fromRGB(0, 255, 100)
                     boxStroke.Thickness = 1.5
                 end
-                
                 boxStroke.Color = statusColor
                 nameLabel.TextColor3 = statusColor
             end
@@ -2217,7 +2146,6 @@ end
 local function disableESP()
     if espConnections.playerAdded then pcall(function() espConnections.playerAdded:Disconnect() end) espConnections.playerAdded = nil end
     if espConnections.playerRemoving then pcall(function() espConnections.playerRemoving:Disconnect() end) espConnections.playerRemoving = nil end
-
     for player, data in pairs(espConnections) do
         if type(data) == "table" then
             if data.highlight then pcall(function() data.highlight:Destroy() end) end
@@ -2419,7 +2347,6 @@ local function GetTargetPart(obj)
     if obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Tool") or obj:IsA("Accessory") then
         local primary = (obj:IsA("Model") and obj.PrimaryPart) or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
         if primary then return primary end
-        
         for _, v in pairs(obj:GetDescendants()) do
             if v:IsA("BasePart") and v.Transparency < 0.95 then
                 return v
@@ -2428,13 +2355,10 @@ local function GetTargetPart(obj)
     end
     return nil
 end
-
 local function ShouldIgnoreObject(obj, searchTerm)
     local objName = obj.Name:lower()
     local loweredSearch = searchTerm:lower()
-    
     if obj:IsA("SpawnLocation") then return true end
-    
     local spawnTerms = {"spawn", "point", "location", "area", "pos", "node", "pivot", "marker", "center", "origin"}
     local isSpawnRelated = false
     for _, term in pairs(spawnTerms) do
@@ -2443,7 +2367,6 @@ local function ShouldIgnoreObject(obj, searchTerm)
             break
         end
     end
-    
     if isSpawnRelated then
         local searchHasSpawn = false
         for _, term in pairs(spawnTerms) do
@@ -2454,22 +2377,18 @@ local function ShouldIgnoreObject(obj, searchTerm)
         end
         if not searchHasSpawn then return true end
     end
-    
     if obj.Parent and obj.Parent.Name:lower():find("spawn") and not loweredSearch:find("spawn") then
         return true
     end
-    
     return false
 end
 local function IsObjectValid(obj)
     if not obj or not obj.Parent or not obj:IsDescendantOf(workspace) then return false end
-    
     local blacklistedParents = {"trash", "collected", "hidden", "removed", "bin"}
     local pName = obj.Parent.Name:lower()
     for _, name in pairs(blacklistedParents) do
         if pName:find(name) then return false end
     end
-
     local target = GetTargetPart(obj)
     if target and target:IsA("BasePart") then
         if target.Transparency > 0.95 then return false end
@@ -2481,175 +2400,181 @@ local function ToggleUniversalESP(state)
     Settings.UniversalESPEnabled = state
     UniversalESPSession = UniversalESPSession + 1
     local currentSession = UniversalESPSession
-
     if UniversalESPFolder then UniversalESPFolder:Destroy() end
-    
     if not state then
         if UniversalESPConnection then UniversalESPConnection:Disconnect() end
         UniversalESPConnection = nil
         return
     end
-
     UniversalESPFolder = Instance.new("Folder")
     UniversalESPFolder.Name = "UniversalESP"
     UniversalESPFolder.Parent = CoreGui
-
     local foundCount = 0
+    UniversalTargets = {}
     local function updateCount()
         if ESPCountLabel then
             ESPCountLabel.Set("Found: " .. foundCount .. " objects")
         end
     end
-
     local function Draw(obj)
-        if (obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Tool") or obj:IsA("Accessory")) and Settings.UniversalESPName ~= "" then
+        if (obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Tool") or obj:IsA("Accessory")) then
             local searchTerm = Settings.UniversalESPName:lower():gsub("%s+", "")
             local objName = obj.Name:lower():gsub("%s+", "")
-            
-            if objName:find(searchTerm) then
+            if (searchTerm ~= "" and objName:find(searchTerm)) then
                 if ShouldIgnoreObject(obj, searchTerm) then return end
+                table.insert(UniversalTargets, obj)
                 foundCount = foundCount + 1
                 updateCount()
-
-                local targetPart = GetTargetPart(obj)
-                if not targetPart then return end
-
-                local highlight = Instance.new("Highlight")
-                highlight.Adornee = obj
-                highlight.FillColor = Settings.UniversalESPColor
-                highlight.FillTransparency = 0.4
-                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                highlight.Parent = UniversalESPFolder
-                
-                if Settings.UniversalESPLabels then
-                    local bg = Instance.new("BillboardGui")
-                    bg.Adornee = targetPart
-                    bg.Size = UDim2.new(0, 100, 0, 40)
-                    bg.StudsOffset = Vector3.new(0, 2, 0)
-                    bg.AlwaysOnTop = true
-                    bg.Parent = UniversalESPFolder
-                    
-                    local tl = Instance.new("TextLabel")
-                    tl.BackgroundTransparency = 1
-                    tl.Size = UDim2.new(1, 0, 1, 0)
-                    tl.Font = Config.Font
-                    tl.TextColor3 = Settings.UniversalESPColor
-                    tl.TextStrokeTransparency = 0
-                    tl.TextSize = 14
-                    tl.Parent = bg
-                    
-                    task.spawn(function()
-                        while bg.Parent and IsObjectValid(obj) and currentSession == UniversalESPSession do
-                            local dist = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - targetPart.Position).Magnitude) or 0
-                            tl.Text = string.format("%s\n[%d m]", obj.Name, math.floor(dist))
-                            bg.Enabled = dist <= Settings.UniversalESPDistance
-                            task.wait(0.5)
-                        end
-                        if bg.Parent then bg:Destroy() end
-                    end)
-                end
-                
-                if Settings.UniversalESPTracers then
-                    local tracer = Drawing.new("Line")
-                    tracer.Color = Settings.UniversalESPColor
-                    tracer.Thickness = 1
-                    tracer.Transparency = 1
-                    
-                    task.spawn(function()
-                        while IsObjectValid(obj) and Settings.UniversalESPTracers and currentSession == UniversalESPSession do
-                            local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPart.Position)
-                            if onScreen then
-                                tracer.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
-                                tracer.To = Vector2.new(pos.X, pos.Y)
-                                tracer.Visible = true
-                            else
-                                tracer.Visible = false
-                            end
-                            RunService.RenderStepped:Wait()
-                        end
-                        tracer:Remove()
-                    end)
-                end
-
                 task.spawn(function()
-                    while highlight.Parent and IsObjectValid(obj) and currentSession == UniversalESPSession do
+                    local highlight = nil
+                    local bg = nil
+                    while IsObjectValid(obj) and currentSession == UniversalESPSession do
+                        local targetPart = GetTargetPart(obj)
+                        if not targetPart then break end
+                        local dist = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - targetPart.Position).Magnitude) or 0
+                        local inRange = dist <= Settings.UniversalESPDistance
+                        if inRange then
+                            if not highlight then
+                                highlight = Instance.new("Highlight")
+                                highlight.Adornee = obj
+                                highlight.FillColor = Settings.UniversalESPColor
+                                highlight.FillTransparency = 0.4
+                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                highlight.Parent = UniversalESPFolder
+                            end
+                        else
+                            if highlight then highlight:Destroy(); highlight = nil end
+                        end
+                        if inRange and Settings.UniversalESPLabels then
+                            if not bg then
+                                bg = Instance.new("BillboardGui")
+                                bg.Adornee = targetPart
+                                bg.Size = UDim2.new(0, 100, 0, 40)
+                                bg.StudsOffset = Vector3.new(0, 2, 0)
+                                bg.AlwaysOnTop = true
+                                bg.Parent = UniversalESPFolder
+                                local tl = Instance.new("TextLabel")
+                                tl.Name = "Label"
+                                tl.BackgroundTransparency = 1
+                                tl.Size = UDim2.new(1, 0, 1, 0)
+                                tl.Font = Config.Font
+                                tl.TextColor3 = Settings.UniversalESPColor
+                                tl.TextStrokeTransparency = 0
+                                tl.TextSize = 14
+                                tl.Parent = bg
+                            end
+                            local tl = bg:FindFirstChild("Label")
+                            if tl then tl.Text = string.format("%s\n[%d m]", obj.Name, math.floor(dist)) end
+                        else
+                            if bg then bg:Destroy(); bg = nil end
+                        end
                         task.wait(1)
                     end
-                    if highlight.Parent then highlight:Destroy() end
+                    for i, v in ipairs(UniversalTargets) do
+                        if v == obj then
+                            table.remove(UniversalTargets, i)
+                            foundCount = foundCount - 1
+                            updateCount()
+                            break
+                        end
+                    end
+                    if highlight then highlight:Destroy() end
+                    if bg then bg:Destroy() end
                 end)
             end
         end
     end
-
-    local count = 0
-    for _, v in pairs(workspace:GetDescendants()) do
-        Draw(v)
-        count = count + 1
-        if count % 1000 == 0 then task.wait() end
-    end
-
+    task.spawn(function()
+        local count = 0
+        for _, v in pairs(workspace:GetDescendants()) do
+            if currentSession ~= UniversalESPSession then return end
+            Draw(v)
+            count = count + 1
+            if count % 2500 == 0 then RunService.Heartbeat:Wait() end
+        end
+    end)
     if UniversalESPConnection then UniversalESPConnection:Disconnect() end
-    UniversalESPConnection = workspace.DescendantAdded:Connect(Draw)
+    UniversalESPConnection = workspace.DescendantAdded:Connect(function(obj)
+        if currentSession == UniversalESPSession then
+            Draw(obj)
+        end
+    end)
 end
-
 local function StartAutoFarm()
     task.spawn(function()
         while Settings.AutoFarmEnabled do
-            local searchTerm = Settings.UniversalESPName:lower():gsub("%s+", "")
-            if searchTerm == "" then break end
-            
             local objects = {}
-            local count = 0
-            for _, v in pairs(workspace:GetDescendants()) do
-                local objName = v.Name:lower():gsub("%s+", "")
-                if (v:IsA("BasePart") or v:IsA("Model") or v:IsA("Folder") or v:IsA("Tool") or v:IsA("Accessory")) and objName:find(searchTerm) then
-                    if not ShouldIgnoreObject(v, searchTerm) then
-                        table.insert(objects, v)
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then task.wait(0.5); continue end
+            if Settings.AutoFarmTargetMode == "Players" then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character then
+                        local targetPart = GetTargetPart(p.Character)
+                        if targetPart then
+                            local dist = (hrp.Position - targetPart.Position).Magnitude
+                            if dist <= Settings.UniversalESPDistance then
+                                local isWhitelisted = false
+                                for _, name in pairs(Settings.WhitelistNames) do
+                                    if p.Name == name then isWhitelisted = true break end
+                                end
+                                if not isWhitelisted then
+                                    table.insert(objects, p.Character)
+                                end
+                            end
+                        end
                     end
                 end
-                count = count + 1
-                if count % 1000 == 0 then task.wait() end
+            else
+                if not Settings.UniversalESPEnabled then
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Auto Farm",
+                        Text = "Please enable ESP (X-Ray) for smooth Object Farm! 🔎",
+                        Duration = 3
+                    })
+                    task.wait(2)
+                    continue
+                end
+                for _, v in ipairs(UniversalTargets) do
+                    if IsObjectValid(v) then
+                        local targetPart = GetTargetPart(v)
+                        if targetPart then
+                            local dist = (hrp.Position - targetPart.Position).Magnitude
+                            if dist <= Settings.UniversalESPDistance then
+                                table.insert(objects, v)
+                            end
+                        end
+                    end
+                end
             end
-            
             if #objects > 0 then
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Auto Farm",
-                    Text = "Found " .. #objects .. " objects. Starting cycle...",
-                    Duration = 2
-                })
-
-                -- Visit every object once before re-scanning
+                table.sort(objects, function(a, b)
+                    local aPos = GetTargetPart(a).Position
+                    local bPos = GetTargetPart(b).Position
+                    return (hrp.Position - aPos).Magnitude < (hrp.Position - bPos).Magnitude
+                end)
                 for _, target in ipairs(objects) do
                     if not Settings.AutoFarmEnabled then break end
-                    
-                    -- Wait for character if dead/loading
                     while Settings.AutoFarmEnabled and (not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) do
-                        task.wait(1)
+                        task.wait(0.5)
                     end
                     if not Settings.AutoFarmEnabled then break end
-
                     if not IsObjectValid(target) then continue end
-                    
                     local targetPosPart = GetTargetPart(target)
                     if not targetPosPart then continue end
-
                     pcall(function()
-                        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if hrp then
+                        local currentHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if currentHrp then
                             local offset = target:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0.1, 0)
-                            hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                            hrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
-                            hrp.CFrame = targetPosPart.CFrame + offset
-                            
-                            hrp.Anchored = true
-                            task.delay(0.15, function() if hrp then hrp.Anchored = false end end)
+                            currentHrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                            currentHrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
+                            currentHrp.CFrame = targetPosPart.CFrame + offset
+                            currentHrp.Anchored = true
+                            task.delay(0.15, function() if currentHrp and currentHrp.Parent then currentHrp.Anchored = false end end)
                         end
-                        
                         if Settings.AutoFarmInteract then
                             firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPosPart, 0)
                             firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPosPart, 1)
-                            
                             for _, prompt in pairs(target:GetDescendants()) do
                                 if prompt:IsA("ProximityPrompt") then
                                     fireproximityprompt(prompt)
@@ -2657,18 +2582,16 @@ local function StartAutoFarm()
                             end
                         end
                     end)
-
                     task.wait(Settings.AutoFarmDelay)
                 end
             else
-                task.wait(1) -- Wait if no objects found
+                task.wait(0.1)
             end
         end
     end)
 end
-
 local function TeleportNextObject()
-    if Settings.UniversalESPName == "" then
+    if Settings.AutoFarmTargetMode == "Objects" and Settings.UniversalESPName == "" then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Hack Tools",
             Text = "Please enter an object name first!",
@@ -2676,56 +2599,66 @@ local function TeleportNextObject()
         })
         return
     end
-    
     local searchTerm = Settings.UniversalESPName:lower():gsub("%s+", "")
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
-    if #SequentialTPQueue == 0 or LastSequentialSearch ~= searchTerm then
+    if #SequentialTPQueue == 0 or LastSequentialSearch ~= (Settings.AutoFarmTargetMode .. ":" .. searchTerm) then
         SequentialTPQueue = {}
         SequentialTPIndex = 0
-        LastSequentialSearch = searchTerm
-        local count = 0
-        for _, v in pairs(workspace:GetDescendants()) do
-            local objName = v.Name:lower():gsub("%s+", "")
-            if (v:IsA("BasePart") or v:IsA("Model") or v:IsA("Folder") or v:IsA("Tool") or v:IsA("Accessory")) and objName:find(searchTerm, 1, true) then
-                if not ShouldIgnoreObject(v, searchTerm) then
-                    table.insert(SequentialTPQueue, v)
+        LastSequentialSearch = (Settings.AutoFarmTargetMode .. ":" .. searchTerm)
+        if Settings.AutoFarmTargetMode == "Players" then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character then
+                    local targetPart = GetTargetPart(p.Character)
+                    if targetPart then
+                        local dist = (hrp.Position - targetPart.Position).Magnitude
+                        if dist <= Settings.UniversalESPDistance then
+                            local isWhitelisted = false
+                            for _, name in pairs(Settings.WhitelistNames) do
+                                if p.Name == name then isWhitelisted = true break end
+                            end
+                            if not isWhitelisted then
+                                table.insert(SequentialTPQueue, p.Character)
+                            end
+                        end
+                    end
                 end
             end
-            count = count + 1
-            if count % 1000 == 0 then task.wait() end
+        else
+            local count = 0
+            for _, v in pairs(workspace:GetDescendants()) do
+                local objName = v.Name:lower():gsub("%s+", "")
+                if (v:IsA("BasePart") or v:IsA("Model") or v:IsA("Folder") or v:IsA("Tool") or v:IsA("Accessory")) and objName:find(searchTerm, 1, true) then
+                    local targetPart = GetTargetPart(v)
+                    if targetPart then
+                        local dist = (hrp.Position - targetPart.Position).Magnitude
+                        if dist <= Settings.UniversalESPDistance then
+                            if not ShouldIgnoreObject(v, searchTerm) then
+                                table.insert(SequentialTPQueue, v)
+                            end
+                        end
+                    end
+                end
+                count = count + 1
+                if count % 1000 == 0 then task.wait() end
+            end
         end
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Sequential TP",
-            Text = "Cached " .. #SequentialTPQueue .. " objects for '" .. Settings.UniversalESPName .. "'",
-            Duration = 2
-        })
     end
-
     if #SequentialTPQueue > 0 then
         SequentialTPIndex = SequentialTPIndex + 1
         if SequentialTPIndex > #SequentialTPQueue then
             SequentialTPIndex = 1
         end
-
-        local target = SequentialTPQueue[SequentialTPIndex]
-        if IsObjectValid(target) then
-            local targetPosPart = GetTargetPart(target)
+        local targetResource = SequentialTPQueue[SequentialTPIndex]
+        if IsObjectValid(targetResource) then
+            local targetPosPart = GetTargetPart(targetResource)
             if targetPosPart then
                 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
                 hrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
-                local offset = target:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0.1, 0)
+                local offset = targetResource:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0.1, 0)
                 hrp.CFrame = targetPosPart.CFrame + offset
-                
                 hrp.Anchored = true
                 task.delay(0.15, function() if hrp then hrp.Anchored = false end end)
-
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Sequential TP",
-                    Text = string.format("Teleported to [%d/%d]: %s", SequentialTPIndex, #SequentialTPQueue, target.Name),
-                    Duration = 1
-                })
             else
                 table.remove(SequentialTPQueue, SequentialTPIndex)
                 SequentialTPIndex = SequentialTPIndex - 1
@@ -2841,14 +2774,10 @@ end
 local Window = Library:CreateWindow({
     Name = "Diablo Hub"
 })
-
 local CombatTab = Window:Tab("Combat ⚔️")
 local AimbotTab = Window:Tab("Aimbot 🎯")
 local VisualsTab = Window:Tab("Visuals 👁️")
 local MovementTab = Window:Tab("Movement ⚡")
-
-
-
 CombatTab:Section("Fling 🌪️")
 UIElements.TouchFlingEnabled = CombatTab:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
     ToggleFling(state)
@@ -2862,7 +2791,6 @@ UIElements.AntiFlingEnabled = CombatTab:Toggle("Anti-Fling 🛡️", Settings.An
     ToggleAntiFling(state)
     SaveConfig(true)
 end)
-
 CombatTab:Section("Hitbox Expander")
 UIElements.HitboxExpanderEnabled = CombatTab:Toggle("Enable Expander 📦", Settings.HitboxExpanderEnabled, function(state)
     ToggleHitboxExpander(state)
@@ -2908,11 +2836,7 @@ CombatTab:Button("Clear Ignore List 🗑️", function()
         Duration = 3
     })
 end)
-
-
 AimbotTab:Section("Aimbot / Camlock 🎯")
-
-
 AimbotFOVCircle = Drawing.new("Circle")
 AimbotFOVCircle.Color = Color3.fromRGB(255, 255, 255)
 AimbotFOVCircle.Thickness = 1
@@ -2921,13 +2845,11 @@ AimbotFOVCircle.Transparency = 1
 AimbotFOVCircle.NumSides = 64
 AimbotFOVCircle.Radius = Settings.AimbotFOV
 AimbotFOVCircle.Visible = false
-
 local function IsVisible(target, part, accurate)
     if not Settings.AimbotWallCheck then return true end
     local camera = workspace.CurrentCamera
     local origin = camera.CFrame.Position
     local destination = part.Position
-    
     local params = RaycastParams.new()
     local filter = {LocalPlayer.Character, camera}
     for _, item in pairs(target.Character:GetChildren()) do
@@ -2936,7 +2858,6 @@ local function IsVisible(target, part, accurate)
     params.FilterDescendantsInstances = filter
     params.FilterType = Enum.RaycastFilterType.Blacklist
     params.IgnoreWater = true
-    
     if accurate then
         local off = part.Size.Y * 0.3
         local checkPoints = {destination, destination + Vector3.new(0, off, 0), destination - Vector3.new(0, off, 0)}
@@ -2954,23 +2875,18 @@ local function IsVisible(target, part, accurate)
     end
     return false
 end
-
 local function GetClosestPlayer()
     local closest = nil
     local shortestDist = Settings.AimbotFOV
     local mousePos = UserInputService:GetMouseLocation()
-    
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
             if Settings.AimbotTeamCheck and player.Team == LocalPlayer.Team then continue end
-
             local isWhitelisted = false
             for _, name in pairs(Settings.WhitelistNames) do
                 if player.Name == name then isWhitelisted = true break end
             end
             if isWhitelisted then continue end
-
-            -- LIGHTWEIGHT SELECTION: Only check core points to identify player
             local selectionParts = {Settings.AimbotPart, "Head", "HumanoidRootPart", "UpperTorso"}
             for _, partName in ipairs(selectionParts) do
                 local part = player.Character:FindFirstChild(partName, true)
@@ -2980,9 +2896,7 @@ local function GetClosestPlayer()
                         local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
                         local bias = (player == Target) and 0.7 or 1.0
                         local weightedDist = dist * bias
-                        
                         if weightedDist < shortestDist then
-                            -- Fast check (accurate = false)
                             if IsVisible(player, part, false) then
                                 shortestDist = weightedDist
                                 closest = player
@@ -2996,11 +2910,9 @@ local function GetClosestPlayer()
     end
     return closest
 end
-
 local Target = nil
 local LastTarget = nil
 local TargetSwitchTick = 0
-
 function SetupAimbot()
     AimbotConnection = RegisterConnection(RunService.RenderStepped:Connect(function()
         AimbotFOVCircle.Radius = Settings.AimbotFOV
@@ -3018,16 +2930,12 @@ function SetupAimbot()
         end
         if isAiming then
             local function GetBestPart(p)
-                -- 1st Priority: Selected part (Accurate check)
                 local primary = p.Character:FindFirstChild(Settings.AimbotPart, true)
                 if primary and IsVisible(p, primary, true) then return primary end
-
                 if Settings.AimbotAdaptiveAim then
                     local bestResult = nil
                     local bestPriority = -1
                     local priorityMap = {["Head"]=10, ["UpperTorso"]=8, ["Torso"]=8, ["LowerTorso"]=7, ["HumanoidRootPart"]=6}
-
-                    -- SCAN LIMITER: ONLY scan descendants if core parts are obscured
                     for _, obj in pairs(p.Character:GetDescendants()) do
                         if obj:IsA("BasePart") and obj.Transparency < 0.9 then
                             if IsVisible(p, obj, true) then
@@ -3050,7 +2958,6 @@ function SetupAimbot()
                 end
                 return nil
             end
-
             local oldTarget = Target
             if not Target or not Target.Character or not Target.Character:FindFirstChild("Humanoid") or Target.Character.Humanoid.Health <= 0 then
                 Target = GetClosestPlayer()
@@ -3064,56 +2971,45 @@ function SetupAimbot()
                         inFOV = true
                     end
                 end
-                
                 if not inFOV then
                     Target = GetClosestPlayer()
                 end
             end
-
             if oldTarget ~= Target then
                 LastTarget = oldTarget
                 TargetSwitchTick = tick()
             end
-
             if Target and Target.Character then
                 local targetPart = GetBestPart(Target)
                 if targetPart then
                     local targetPos = targetPart.Position
-                    
                     if Settings.ResolverEnabled then
                         local velocity = targetPart.Velocity
                         if velocity.Magnitude > 50 or math.abs(targetPart.RotVelocity.Y) > 10 then
                             targetPos = Target.Character.HumanoidRootPart.Position
                         end
                     end
-
                     if Settings.AimbotPrediction then
                         local distance = (workspace.CurrentCamera.CFrame.Position - targetPos).Magnitude
                         local velocity = targetPart.Velocity
                         local predictionStrength = (distance / 1000) * (1 + (distance / 500))
                         targetPos = targetPos + (velocity * predictionStrength)
                     end
-
                     local currentCFrame = workspace.CurrentCamera.CFrame
                     local goalCFrame = CFrame.new(currentCFrame.Position, targetPos)
                     local magnetism = math.clamp(Settings.AimbotSmoothness, 0.01, 100)
-                    
                     if magnetism >= 95 then
                         workspace.CurrentCamera.CFrame = goalCFrame
                     else
                         local strength = magnetism / 100
                         local timeSinceSwitch = tick() - TargetSwitchTick
-                        
-                        -- Pro-Flick Interpolation curve
                         local alpha = strength ^ 2
                         if timeSinceSwitch < 0.2 then
                             local flickEased = math.sin((timeSinceSwitch / 0.2) * math.pi / 2)
                             alpha = alpha * flickEased
                         end
-                        
                         workspace.CurrentCamera.CFrame = currentCFrame:Lerp(goalCFrame, math.clamp(alpha, 0.01, 1))
                     end
-
                     if Settings.AutoTriggerSyncEnabled then
                         local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetPart.Position)
                         local mousePos = UserInputService:GetMouseLocation()
@@ -3130,7 +3026,6 @@ function SetupAimbot()
     end))
 end
 SetupAimbot()
-
 UIElements.AimbotEnabled = AimbotTab:Toggle("Enable Aimbot 🎯", Settings.AimbotEnabled, function(state)
     Settings.AimbotEnabled = state
     SaveConfig(true)
@@ -3181,11 +3076,8 @@ UIElements.AutoTriggerSyncEnabled = AimbotTab:Toggle("Auto-Trigger Sync ⚡💥"
     Settings.AutoTriggerSyncEnabled = state
     SaveConfig(true)
 end)
-
 AimbotTab:Section("TriggerBot 🔫")
-
 local isV2Holding = false
-
 local function TriggerBotV1Logic()
     if not Settings.TriggerBotV1Enabled then return end
     local mouse = LocalPlayer:GetMouse()
@@ -3205,17 +3097,14 @@ local function TriggerBotV1Logic()
         end
     end
 end
-
 local function TriggerBotV2Logic()
-    if not Settings.TriggerBotV2Enabled then 
+    if not Settings.TriggerBotV2Enabled then
         if isV2Holding then mouse1release() isV2Holding = false end
-        return 
+        return
     end
-    
     local mouse = LocalPlayer:GetMouse()
     local target = mouse.Target
     local shouldHold = false
-    
     if target and target.Parent then
         local player = Players:GetPlayerFromCharacter(target.Parent) or Players:GetPlayerFromCharacter(target.Parent.Parent)
         if player and player ~= LocalPlayer then
@@ -3224,14 +3113,12 @@ local function TriggerBotV2Logic()
                 for _, name in pairs(Settings.WhitelistNames) do
                     if player.Name == name then isWhitelisted = true break end
                 end
-                
                 if not isWhitelisted then
                     shouldHold = true
                 end
             end
         end
     end
-    
     if shouldHold then
         if not isV2Holding then
             mouse1press()
@@ -3244,7 +3131,6 @@ local function TriggerBotV2Logic()
         end
     end
 end
-
 RunService.RenderStepped:Connect(function()
     if Settings.TriggerBotV1Enabled then
         TriggerBotV1Logic()
@@ -3253,20 +3139,15 @@ RunService.RenderStepped:Connect(function()
         TriggerBotV2Logic()
     end
 end)
-
 UIElements.TriggerBotV1Enabled = AimbotTab:Toggle("TriggerBot V1 (Semi) 🔫", Settings.TriggerBotV1Enabled, function(state)
     Settings.TriggerBotV1Enabled = state
 end)
-
 UIElements.TriggerBotV2Enabled = AimbotTab:Toggle("TriggerBot V2 (Rage Mode) 💀🔥", Settings.TriggerBotV2Enabled, function(state)
     Settings.TriggerBotV2Enabled = state
 end)
-
-
 UIElements.TriggerBotTeamCheck = AimbotTab:Toggle("Team Check 🛡️", Settings.TriggerBotTeamCheck, function(state)
     Settings.TriggerBotTeamCheck = state
 end)
-
 AimbotTab:Section("Whitelist Management (Aimbot & TriggerBot) 🛡️")
 AimbotTab:Dropdown("Add/Remove Player 👤", {}, function(selected)
     local foundIdx = nil
@@ -3293,7 +3174,6 @@ AimbotTab:Dropdown("Add/Remove Player 👤", {}, function(selected)
     end
     SaveConfig(true)
 end)
-
 AimbotTab:Button("Clear Whitelist 🗑️", function()
     Settings.WhitelistNames = {}
     SaveConfig(true)
@@ -3303,8 +3183,6 @@ AimbotTab:Button("Clear Whitelist 🗑️", function()
         Duration = 3
     })
 end)
-
-
 VisualsTab:Section("ESP System 👁️")
 UIElements.ESPEnabled = VisualsTab:Toggle("ESP V1 (Highlight) 👁️", Settings.ESPEnabled, function(state)
     Settings.ESPEnabled = state
@@ -3357,19 +3235,17 @@ VisualsTab:Button("Clear Ally List 🗑️", function()
         Duration = 3
     })
 end)
-
 UIElements.FullbrightEnabled = VisualsTab:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
     SetFullbright(state)
 end)
 VisualsTab:Button("Deep Map Clean 🧹", function()
     ToggleMapCleaner()
 end)
-
 VisualsTab:Section("Camera Controls 🎥")
 UIElements.FreecamEnabled = VisualsTab:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
     ToggleFreecam(state)
 end)
-UIElements.FreecamSpeed = VisualsTab:NumberInput("Freecam Speed 🏎️", Settings.FreecamSpeed, function(value)
+UIElements.FreecamSpeed = VisualsTab:NumberInput("Freecam Speed 🏎️", 1, function(value)
     Settings.FreecamSpeed = value
 end)
 VisualsTab:Dropdown("Spectate Player 📹", {}, function(selected)
@@ -3390,15 +3266,11 @@ UIElements.MaxZoomDistance = VisualsTab:NumberInput("Max Zoom Distance", Setting
         ToggleZoomUnlocker(true)
     end
 end)
-
 VisualsTab:Section("Radar System 📡")
-
-
 RadarGUI = Instance.new("ScreenGui")
 RadarGUI.Name = "DiabloRadar"
 if syn and syn.protect_gui then syn.protect_gui(RadarGUI) end
 RadarGUI.Parent = game:GetService("CoreGui")
-
 RadarFrame = Instance.new("Frame")
 RadarFrame.Name = "RadarFrame"
 RadarFrame.Parent = RadarGUI
@@ -3409,20 +3281,14 @@ RadarFrame.Position = UDim2.new(0, 20, 0, 20)
 RadarFrame.Size = UDim2.new(0, Settings.RadarSize, 0, Settings.RadarSize)
 RadarFrame.Visible = Settings.RadarEnabled
 MakeDraggable(RadarFrame, RadarFrame)
-
-
 local RadarCorner = Instance.new("UICorner")
 RadarCorner.CornerRadius = UDim.new(0, 5)
 RadarCorner.Parent = RadarFrame
-
-
 local RadarStroke = Instance.new("UIStroke")
 RadarStroke.Parent = RadarFrame
 RadarStroke.Thickness = 2
 RadarStroke.Color = Color3.fromRGB(255, 60, 60)
 RadarStroke.Transparency = 0
-
-
 local GridV = Instance.new("Frame")
 GridV.Parent = RadarFrame
 GridV.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3430,7 +3296,6 @@ GridV.BackgroundTransparency = 0.8
 GridV.Size = UDim2.new(0, 1, 1, 0)
 GridV.Position = UDim2.new(0.5, 0, 0, 0)
 GridV.BorderSizePixel = 0
-
 local GridH = Instance.new("Frame")
 GridH.Parent = RadarFrame
 GridH.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3438,7 +3303,6 @@ GridH.BackgroundTransparency = 0.8
 GridH.Size = UDim2.new(1, 0, 0, 1)
 GridH.Position = UDim2.new(0, 0, 0.5, 0)
 GridH.BorderSizePixel = 0
-
 local RadarCenter = Instance.new("Frame")
 RadarCenter.Name = "Center"
 RadarCenter.Parent = RadarFrame
@@ -3450,81 +3314,54 @@ RadarCenter.ZIndex = 3
 local CenterCorner = Instance.new("UICorner")
 CenterCorner.CornerRadius = UDim.new(1, 0)
 CenterCorner.Parent = RadarCenter
-
-local Blips = {} 
-
+local Blips = {}
 local function UpdateRadar()
     RadarFrame.Visible = Settings.RadarEnabled
     RadarFrame.Size = UDim2.new(0, Settings.RadarSize, 0, Settings.RadarSize)
-    
     if not Settings.RadarEnabled then return end
-    
     local origin = workspace.CurrentCamera.CFrame
     local camPos = origin.Position
     local camRot = origin.LookVector
-    
-
     for player, blip in pairs(Blips) do
         if not player or not player.Parent or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
             blip:Destroy()
             Blips[player] = nil
         end
     end
-    
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            
-
             local isTeammate = (player.Team == LocalPlayer.Team)
             if Settings.RadarTeamCheck and isTeammate then
                 if Blips[player] then Blips[player].Visible = false end
-                continue 
+                continue
             end
-            
-
             if not Blips[player] then
                 local b = Instance.new("Frame")
                 b.Parent = RadarFrame
                 b.Size = UDim2.new(0, 6, 0, 6)
                 b.BorderSizePixel = 0
                 b.ZIndex = 2
-                
-
                 local bc = Instance.new("UICorner")
                 bc.CornerRadius = UDim.new(1, 0)
                 bc.Parent = b
-                
-
                 local bs = Instance.new("UIStroke")
                 bs.Parent = b
                 bs.Thickness = 1
                 bs.Color = Color3.fromRGB(0, 0, 0)
                 bs.Transparency = 0.2
-                
                 Blips[player] = b
             end
-            
             local blip = Blips[player]
             blip.BackgroundColor3 = isTeammate and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 40, 40)
-            
             local targetPos = player.Character.HumanoidRootPart.Position
             local relativePos = targetPos - camPos
-            
-
-
-
             local rx = relativePos:Dot(origin.RightVector)
             local ry = relativePos:Dot(origin.LookVector)
-            
-
             local scale = Settings.RadarSize / 2
             local mapX = (rx / Settings.RadarRange) * scale
             local mapY = (-ry / Settings.RadarRange) * scale
-            
-
             mapX = math.clamp(mapX, -scale + 2, scale - 2)
             mapY = math.clamp(mapY, -scale + 2, scale - 2)
-            
             blip.Position = UDim2.new(0.5, mapX - 2, 0.5, mapY - 2)
             blip.Visible = true
         else
@@ -3532,32 +3369,25 @@ local function UpdateRadar()
         end
     end
 end
-
 RadarConnection = RegisterConnection(RunService.RenderStepped:Connect(UpdateRadar))
-
 UIElements.RadarEnabled = VisualsTab:Toggle("Enable Radar 📡", Settings.RadarEnabled, function(state)
     Settings.RadarEnabled = state
     RadarFrame.Visible = state
     SaveConfig(true)
 end)
-
 UIElements.RadarRange = VisualsTab:NumberInput("Radar Range (Zoom) 🔍", Settings.RadarRange, function(val)
     Settings.RadarRange = val
     SaveConfig(true)
 end)
-
 UIElements.RadarSize = VisualsTab:NumberInput("Radar UI Size 📏", Settings.RadarSize, function(val)
     Settings.RadarSize = val
     RadarFrame.Size = UDim2.new(0, val, 0, val)
     SaveConfig(true)
 end)
-
 UIElements.RadarTeamCheck = VisualsTab:Toggle("Team Check 🛡️", Settings.RadarTeamCheck, function(state)
     Settings.RadarTeamCheck = state
     SaveConfig(true)
 end)
-
-
 MovementTab:Section("Movement Tweaks ⚡")
 UIElements.FlyEnabled = MovementTab:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
     ToggleFly(state)
@@ -3595,7 +3425,6 @@ end)
 MovementTab:Button("TP to Last Death 💀", function()
     TeleportToLastDeath()
 end)
-
 MovementTab:Section("Spin Bot 🌪️")
 UIElements.SpinBotEnabled = MovementTab:Toggle("Enable Spin Bot 🌪️", Settings.SpinBotEnabled, function(state)
     ToggleSpinBot(state)
@@ -3605,12 +3434,8 @@ UIElements.SpinBotSpeed = MovementTab:NumberInput("Spin Speed 🚄", Settings.Sp
     Settings.SpinBotSpeed = value
     SaveConfig(true)
 end)
-
 local WaypointTab = Window:Tab("Waypoints 📍")
-
-
 WaypointTab:Section("Saved Locations 📜")
-
 local ListFrame = Instance.new("ScrollingFrame")
 ListFrame.Name = "WPList"
 if WaypointTab.Page then
@@ -3632,12 +3457,10 @@ Pad.Parent = ListFrame
 Pad.PaddingTop = UDim.new(0,5)
 Pad.PaddingLeft = UDim.new(0,5)
 Pad.PaddingRight = UDim.new(0,5)
-
 local function RefreshWPList()
     for _, v in pairs(ListFrame:GetChildren()) do
         if v:IsA("Frame") then v:Destroy() end
     end
-    
     for i, wp in pairs(Settings.Waypoints) do
         local Item = Instance.new("Frame")
         Item.Parent = ListFrame
@@ -3646,7 +3469,6 @@ local function RefreshWPList()
         local ICorner = Instance.new("UICorner")
         ICorner.CornerRadius = UDim.new(0, 6)
         ICorner.Parent = Item
-        
         local WName = Instance.new("TextLabel")
         WName.Parent = Item
         WName.BackgroundTransparency = 1
@@ -3657,7 +3479,6 @@ local function RefreshWPList()
         WName.TextColor3 = Config.Colors.Text
         WName.TextSize = 12
         WName.TextXAlignment = Enum.TextXAlignment.Left
-        
         local TPBtn = Instance.new("TextButton")
         TPBtn.Parent = Item
         TPBtn.BackgroundColor3 = Config.Colors.Accent
@@ -3667,13 +3488,11 @@ local function RefreshWPList()
         TPBtn.TextColor3 = Color3.new(1,1,1)
         TPBtn.Font = Config.Font
         local TPCorner = Instance.new("UICorner"); TPCorner.CornerRadius=UDim.new(0,4); TPCorner.Parent = TPBtn
-        
         TPBtn.MouseButton1Click:Connect(function()
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(wp.X, wp.Y + 3, wp.Z)
             end
         end)
-        
         local DelBtn = Instance.new("TextButton")
         DelBtn.Parent = Item
         DelBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
@@ -3683,7 +3502,6 @@ local function RefreshWPList()
         DelBtn.TextColor3 = Color3.new(1,1,1)
         DelBtn.Font = Config.Font
         local DCorner = Instance.new("UICorner"); DCorner.CornerRadius=UDim.new(0,4); DCorner.Parent = DelBtn
-        
         DelBtn.MouseButton1Click:Connect(function()
             table.remove(Settings.Waypoints, i)
             SaveConfig(true)
@@ -3691,20 +3509,14 @@ local function RefreshWPList()
         end)
     end
 end
-
 WaypointTab:Button("Refresh List (รีเฟรช) 🔄", function()
     RefreshWPList()
 end)
-
-
-
-
 WaypointTab:Section("Add New Location ➕")
 local NewWPName = ""
 WaypointTab:TextInput("Location Name (ชื่อสถานที่)", "Enter Name...", function(val)
     NewWPName = val
 end)
-
 WaypointTab:Button("Save Here (บันทึกตรงนี้) 💾", function()
     if NewWPName == "" then
         NewWPName = "Waypoint " .. (#Settings.Waypoints + 1)
@@ -3722,8 +3534,6 @@ WaypointTab:Button("Save Here (บันทึกตรงนี้) 💾", func
         game:GetService("StarterGui"):SetCore("SendNotification", {Title="Waypoints", Text="Saved '"..NewWPName.."'! 💾", Duration=2})
     end
 end)
-
-
 WaypointTab:Section("My Coordinates 🧭")
 local CoordsBtn = WaypointTab:Button("Finding Position...", function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -3736,7 +3546,6 @@ local CoordsBtn = WaypointTab:Button("Finding Position...", function()
         })
     end
 end)
-
 task.spawn(function()
     while CoordsBtn and CoordsBtn.Parent do
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -3746,15 +3555,11 @@ task.spawn(function()
         task.wait(0.2)
     end
 end)
-
-
 WaypointTab:Section("Share / Import 📤")
 local ImportBox = ""
 WaypointTab:TextInput("Enter Code (ใส่โค้ดที่นี่)", "Paste Code...", function(val)
     ImportBox = val
 end)
-
-
 local B62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 local function toBase62(num)
     if num == 0 then return "0" end
@@ -3768,7 +3573,6 @@ local function toBase62(num)
     end
     return sign .. result
 end
-
 local function fromBase62(str)
     local sign = 1
     if string.sub(str, 1, 1) == "-" then
@@ -3786,34 +3590,24 @@ local function fromBase62(str)
     end
     return result * sign
 end
-
 WaypointTab:Button("Load Code (โหลดข้อมูล) 📥", function()
     if ImportBox ~= "" then
-
         local isJson, decoded = pcall(function() return HttpService:JSONDecode(ImportBox) end)
-        
         local waypointsToAdd = {}
-        
         if isJson and type(decoded) == "table" then
             for _, wp in pairs(decoded) do
-
                 local newWP = nil
                 if type(wp) == "table" then
                      if wp[1] and type(wp[1]) == "string" then
-
                          newWP = {Name = wp[1], X = tonumber(wp[2]) or 0, Y = tonumber(wp[3]) or 0, Z = tonumber(wp[4]) or 0}
                      elseif wp.Name and wp.X then
-
                          newWP = wp
                      end
                 end
                 if newWP then table.insert(waypointsToAdd, newWP) end
             end
         else
-
-
             for wpStr in string.gmatch(ImportBox, "([^;]+)") do
-
                 local bName, bX, bY, bZ = string.match(wpStr, "^(.*)|([-%w]+),([-%w]+),([-%w]+)$")
                 if bName and bX and bY and bZ then
                     table.insert(waypointsToAdd, {
@@ -3823,7 +3617,6 @@ WaypointTab:Button("Load Code (โหลดข้อมูล) 📥", function()
                         Z = fromBase62(bZ)
                     })
                 else
-
                     local tName, tX, tY, tZ = string.match(wpStr, "^(.*):([-%d]+),([-%d]+),([-%d]+)$")
                     if tName and tX and tY and tZ then
                         table.insert(waypointsToAdd, {
@@ -3836,7 +3629,6 @@ WaypointTab:Button("Load Code (โหลดข้อมูล) 📥", function()
                 end
             end
         end
-        
         if #waypointsToAdd > 0 then
             for _, wp in pairs(waypointsToAdd) do
                 table.insert(Settings.Waypoints, wp)
@@ -3849,9 +3641,7 @@ WaypointTab:Button("Load Code (โหลดข้อมูล) 📥", function()
         end
     end
 end)
-
 WaypointTab:Button("Copy All (ก๊อปปี้ทั้งหมด) 📤", function()
-
     local parts = {}
     for _, wp in pairs(Settings.Waypoints) do
         local safeName = wp.Name:gsub(":", "-"):gsub(";", ","):gsub("|", "-")
@@ -3860,13 +3650,10 @@ WaypointTab:Button("Copy All (ก๊อปปี้ทั้งหมด) 📤",
         local bz = toBase62(math.floor(wp.Z))
         table.insert(parts, string.format("%s|%s,%s,%s", safeName, bx, by, bz))
     end
-    
     local rawCode = table.concat(parts, ";")
     setclipboard(rawCode)
     game:GetService("StarterGui"):SetCore("SendNotification", {Title="GenCode", Text="Copied Max Compressed Code! 🚀", Duration=3})
 end)
-
-
 local HackToolsTab = Window:Tab("Hack Tools 🛠️")
 ESPCountLabel = HackToolsTab:Label("Found: 0 objects")
 HackToolsTab:Section("Universal ESP 👁️")
@@ -3891,22 +3678,18 @@ HackToolsTab:Button("Refresh Search 🔄", function()
     })
 end)
 HackToolsTab:Toggle("Enable X-Ray Vision 🔎", Settings.UniversalESPEnabled, function(state)
+    Settings.UniversalESPLabels = state
     ToggleUniversalESP(state)
     SaveConfig(true)
-end)
-HackToolsTab:Toggle("Show Tracers 📏", Settings.UniversalESPTracers, function(state)
-    Settings.UniversalESPTracers = state
-    ToggleUniversalESP(false); task.wait(); ToggleUniversalESP(true)
-end)
-HackToolsTab:Toggle("Show Info Labels 🏷️", Settings.UniversalESPLabels, function(state)
-    Settings.UniversalESPLabels = state
-    ToggleUniversalESP(false); task.wait(); ToggleUniversalESP(true)
 end)
 HackToolsTab:Slider("Max Distance 📏", 50, 20000, Settings.UniversalESPDistance, function(val)
     Settings.UniversalESPDistance = val
 end)
-
 HackToolsTab:Section("Auto Farming Engine ⚡")
+HackToolsTab:Dropdown("Target Type 🎯", {"Objects", "Players"}, function(selected)
+    Settings.AutoFarmTargetMode = selected
+    SaveConfig(true)
+end)
 HackToolsTab:Toggle("Auto-Teleport Loop 🚀", Settings.AutoFarmEnabled, function(state)
     Settings.AutoFarmEnabled = state
     if state then StartAutoFarm() end
@@ -3923,7 +3706,6 @@ end)
 HackToolsTab:Button("Teleport Once 📍", function()
     TeleportNextObject()
 end)
-
 local SettingsTab = Window:Tab("Settings ⚙️")
 SettingsTab:Section("System & Optimization ⚙️")
 UIElements.FPSBoosterEnabled = SettingsTab:Toggle("FPS Booster ⚡", Settings.FPSBoosterEnabled, function(state)
@@ -3962,13 +3744,11 @@ end)
 SettingsTab:Button("Load Config 📂", function()
     LoadConfig()
 end)
-
 SettingsTab:Section("Keybinds ⌨️")
 UIElements.ToggleUIKey = SettingsTab:Keybind("Toggle UI Key 🔓", Settings.ToggleUIKey, function(key)
     Settings.ToggleUIKey = key
     SaveConfig(true)
 end)
-
 task.spawn(function()
     while true do
         local names = {}
@@ -4001,10 +3781,8 @@ task.spawn(function()
     end
     SendWebhook()
 end)
-
 function Library:Unload()
     Running = false
-    
     pcall(function() ToggleFly(false) end)
     pcall(function() ToggleSpinBot(false) end)
     pcall(function() ToggleFreecam(false) end)
@@ -4020,18 +3798,16 @@ function Library:Unload()
     pcall(function() SpectatePlayer("None") end)
     pcall(function() ToggleUniversalESP(false) end)
     pcall(function() disableESP() end)
-
     local globals = {
-        TPWalkConnection, NoClipConnection, AntiScreenShakeConnection, 
-        InfiniteJumpConnection, FreecamConnection, WaterConnection, 
-        RemoveBlurConnection, FPSBoosterConnection, HitboxConnection, 
+        TPWalkConnection, NoClipConnection, AntiScreenShakeConnection,
+        InfiniteJumpConnection, FreecamConnection, WaterConnection,
+        RemoveBlurConnection, FPSBoosterConnection, HitboxConnection,
         InstantInteractConnection, ClickToFlingConnection, SpinBotConnection,
         RadarConnection, AimbotConnection, FullbrightConnection, UniversalESPConnection
     }
     for _, conn in pairs(globals) do
         if conn then pcall(function() conn:Disconnect() end) end
     end
-
     if type(espConnections) == "table" then
         for _, conn in pairs(espConnections) do
             if type(conn) == "table" then
@@ -4044,26 +3820,21 @@ function Library:Unload()
             end
         end
     end
-
     if type(PermanentConnections) == "table" then
         for _, conn in pairs(PermanentConnections) do
             pcall(function() conn:Disconnect() end)
         end
     end
-
-    if AimbotFOVCircle then 
+    if AimbotFOVCircle then
         pcall(function() AimbotFOVCircle.Visible = false end)
-        pcall(function() AimbotFOVCircle:Remove() end) 
+        pcall(function() AimbotFOVCircle:Remove() end)
     end
     if ScreenGui then pcall(function() ScreenGui:Destroy() end) end
     if RadarGUI then pcall(function() RadarGUI:Destroy() end) end
     if UniversalESPFolder then pcall(function() UniversalESPFolder:Destroy() end) end
-
     for k, v in pairs(Settings) do
         if type(v) == "boolean" then Settings[k] = false end
     end
-
     print("Diablo Hub fully unloaded! 🧹🛡️")
 end
-
 return Library
