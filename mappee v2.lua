@@ -1105,7 +1105,8 @@ Settings = {
     RadarEnabled = false,
     RadarRange = 250,
     RadarSize = 150,
-    RadarTeamCheck = true
+    RadarTeamCheck = true,
+    MultiFlingEnabled = false
 }
 local FolderName = "Diablo Script"
 local ConfigName = "config.json"
@@ -1758,8 +1759,10 @@ local function UpdateHitboxes()
                         break
                     end
                 end
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                local isDead = humanoid and humanoid.Health <= 0
                 local isTeammate = Settings.HitboxTeamCheck and player.Team == LocalPlayer.Team
-                if Settings.HitboxExpanderEnabled and not isIgnored and not isTeammate then
+                if Settings.HitboxExpanderEnabled and not isIgnored and not isTeammate and not isDead then
                     hrp.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
                     hrp.Transparency = 0.7
                     hrp.CanCollide = false
@@ -1863,6 +1866,420 @@ local function ToggleClickToFling(state)
             ClickToFlingConnection:Disconnect()
             ClickToFlingConnection = nil
         end
+    end
+end
+local MultiFlingOldPos = nil
+local SelectedFlingTargets = {}
+local FlingLoopActive = false
+local DiabloFlingGUI = nil
+local function ForceCameraReset()
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Fixed
+        task.wait()
+        workspace.CurrentCamera.CameraSubject = humanoid
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+    end
+end
+local function SkidFling(TargetPlayer)
+    local Character = LocalPlayer.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+    local RootPart = Humanoid and Humanoid.RootPart
+    local TCharacter = TargetPlayer.Character
+    if not TCharacter then return end
+    local THumanoid = TCharacter:FindFirstChildOfClass("Humanoid")
+    local TRootPart = THumanoid and THumanoid.RootPart
+    local THead = TCharacter:FindFirstChild("Head")
+    local Accessory = TCharacter:FindFirstChildOfClass("Accessory")
+    local Handle = Accessory and Accessory:FindFirstChild("Handle")
+    if Character and Humanoid and RootPart then
+        if RootPart.Velocity.Magnitude < 50 then
+            MultiFlingOldPos = RootPart.CFrame
+        end
+        if THumanoid and THumanoid.Sit then return end
+        if THead then
+            workspace.CurrentCamera.CameraSubject = THead
+        elseif Handle then
+            workspace.CurrentCamera.CameraSubject = Handle
+        elseif THumanoid and TRootPart then
+            workspace.CurrentCamera.CameraSubject = THumanoid
+        end
+        if not TCharacter:FindFirstChildWhichIsA("BasePart") then return end
+        local FPos = function(BasePart, Pos, Ang)
+            RootPart.CFrame = CFrame.new(BasePart.Position) * Pos * Ang
+            Character:SetPrimaryPartCFrame(CFrame.new(BasePart.Position) * Pos * Ang)
+            RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
+            RootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+        end
+        local SFBasePart = function(BasePart)
+            local TimeToWait = 2
+            local Time = tick()
+            local Angle = 0
+            repeat
+                if RootPart and THumanoid and FlingLoopActive then
+                    if BasePart.Velocity.Magnitude < 50 then
+                        Angle = Angle + 100
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle),0 ,0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle),0 ,0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, 1.5, 0) + THumanoid.MoveDirection, CFrame.Angles(math.rad(Angle),0 ,0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0) + THumanoid.MoveDirection, CFrame.Angles(math.rad(Angle), 0, 0))
+                        task.wait()
+                    else
+                        FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, -THumanoid.WalkSpeed), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, 1.5, THumanoid.WalkSpeed), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(math.rad(90), 0, 0))
+                        task.wait()
+                        FPos(BasePart, CFrame.new(0, -1.5, 0), CFrame.Angles(0, 0, 0))
+                        task.wait()
+                    end
+                end
+            until Time + TimeToWait < tick() or not FlingLoopActive or not TargetPlayer.Parent
+        end
+        local oldFPDH = workspace.FallenPartsDestroyHeight
+        workspace.FallenPartsDestroyHeight = 0/0
+        local BV = Instance.new("BodyVelocity")
+        BV.Parent = RootPart
+        BV.Velocity = Vector3.new(0, 0, 0)
+        BV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+        if TRootPart then
+            SFBasePart(TRootPart)
+        elseif THead then
+            SFBasePart(THead)
+        elseif Handle then
+            SFBasePart(Handle)
+        end
+        BV:Destroy()
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+        ForceCameraReset()
+        if MultiFlingOldPos then
+            local startTime = tick()
+            repeat
+                RootPart.CFrame = MultiFlingOldPos * CFrame.new(0, .5, 0)
+                Character:SetPrimaryPartCFrame(MultiFlingOldPos * CFrame.new(0, .5, 0))
+                Humanoid:ChangeState("GettingUp")
+                for _, part in pairs(Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Velocity, part.RotVelocity = Vector3.new(), Vector3.new()
+                    end
+                end
+                task.wait()
+            until (RootPart.Position - MultiFlingOldPos.p).Magnitude < 25 or not FlingLoopActive or (tick() - startTime > 1)
+            workspace.FallenPartsDestroyHeight = oldFPDH
+        end
+    end
+end
+local function CreateAdvancedFlingGUI()
+    if DiabloFlingGUI then DiabloFlingGUI:Destroy() end
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "DiabloFlingGUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = CoreGui
+    DiabloFlingGUI = ScreenGui
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 320, 0, 420)
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -210)
+    MainFrame.BackgroundColor3 = Config.Colors.Main
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = ScreenGui
+    local MainCorner = Instance.new("UICorner")
+    MainCorner.CornerRadius = UDim.new(0, 12)
+    MainCorner.Parent = MainFrame
+    local MainStroke = Instance.new("UIStroke")
+    MainStroke.Color = Config.Colors.Secondary
+    MainStroke.Thickness = 1.5
+    MainStroke.Parent = MainFrame
+    local Shadow = Instance.new("ImageLabel")
+    Shadow.Name = "Shadow"
+    Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    Shadow.BackgroundTransparency = 1
+    Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    Shadow.Size = UDim2.new(1, 40, 1, 40)
+    Shadow.ZIndex = 0
+    Shadow.Image = "rbxassetid://6015664154"
+    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    Shadow.ImageTransparency = 0.5
+    Shadow.ScaleType = Enum.ScaleType.Slice
+    Shadow.SliceCenter = Rect.new(49, 49, 450, 450)
+    Shadow.Parent = MainFrame
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Size = UDim2.new(1, 0, 0, 40)
+    TitleBar.BackgroundColor3 = Config.Colors.Secondary
+    TitleBar.BorderSizePixel = 0
+    TitleBar.Parent = MainFrame
+    local TitleCorner = Instance.new("UICorner")
+    TitleCorner.CornerRadius = UDim.new(0, 12)
+    TitleCorner.Parent = TitleBar
+    local TitleFix = Instance.new("Frame")
+    TitleFix.Size = UDim2.new(1, 0, 0, 20)
+    TitleFix.Position = UDim2.new(0, 0, 1, -20)
+    TitleFix.BackgroundColor3 = Config.Colors.Secondary
+    TitleFix.BorderSizePixel = 0
+    TitleFix.Parent = TitleBar
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -50, 1, 0)
+    Title.Position = UDim2.new(0, 15, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "DIABLO FLING PRO"
+    Title.TextColor3 = Config.Colors.Accent
+    Title.Font = Config.Font
+    Title.TextSize = 16
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = TitleBar
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Position = UDim2.new(1, -35, 0.5, -12)
+    CloseButton.Size = UDim2.new(0, 24, 0, 24)
+    CloseButton.BackgroundColor3 = Config.Colors.Secondary
+    CloseButton.BorderSizePixel = 0
+    CloseButton.Text = "×"
+    CloseButton.TextColor3 = Config.Colors.Text
+    CloseButton.Font = Config.Font
+    CloseButton.TextSize = 20
+    CloseButton.Parent = TitleBar
+    local CBCorner = Instance.new("UICorner")
+    CBCorner.CornerRadius = UDim.new(1, 0)
+    CBCorner.Parent = CloseButton
+    local CloseStroke = Instance.new("UIStroke")
+    CloseStroke.Color = Config.Colors.Accent
+    CloseStroke.Thickness = 1
+    CloseStroke.Parent = CloseButton
+    local StatusLabel = Instance.new("TextLabel")
+    StatusLabel.Position = UDim2.new(0, 15, 0, 50)
+    StatusLabel.Size = UDim2.new(1, -30, 0, 20)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "Target Selection System"
+    StatusLabel.TextColor3 = Config.Colors.TextDark
+    StatusLabel.Font = Config.Font
+    StatusLabel.TextSize = 13
+    StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    StatusLabel.Parent = MainFrame
+    local SelectionFrame = Instance.new("Frame")
+    SelectionFrame.Position = UDim2.new(0, 15, 0, 80)
+    SelectionFrame.Size = UDim2.new(1, -30, 0, 200)
+    SelectionFrame.BackgroundColor3 = Config.Colors.Secondary
+    SelectionFrame.BorderSizePixel = 0
+    SelectionFrame.Parent = MainFrame
+    local SFCorner = Instance.new("UICorner")
+    SFCorner.CornerRadius = UDim.new(0, 10)
+    SFCorner.Parent = SelectionFrame
+    local PlayerScrollFrame = Instance.new("ScrollingFrame")
+    PlayerScrollFrame.Position = UDim2.new(0, 5, 0, 5)
+    PlayerScrollFrame.Size = UDim2.new(1, -10, 1, -10)
+    PlayerScrollFrame.BackgroundTransparency = 1
+    PlayerScrollFrame.BorderSizePixel = 0
+    PlayerScrollFrame.ScrollBarThickness = 3
+    PlayerScrollFrame.ScrollBarImageColor3 = Config.Colors.Accent
+    PlayerScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    PlayerScrollFrame.Parent = SelectionFrame
+    local StartSelectedBtn = Instance.new("TextButton")
+    StartSelectedBtn.Position = UDim2.new(0, 15, 0, 295)
+    StartSelectedBtn.Size = UDim2.new(0.5, -10, 0, 45)
+    StartSelectedBtn.BackgroundColor3 = Color3.fromRGB(20, 100, 40)
+    StartSelectedBtn.BorderSizePixel = 0
+    StartSelectedBtn.Text = "START SELECTED"
+    StartSelectedBtn.TextColor3 = Config.Colors.Text
+    StartSelectedBtn.Font = Config.Font
+    StartSelectedBtn.TextSize = 13
+    StartSelectedBtn.Parent = MainFrame
+    local SSBCorner = Instance.new("UICorner")
+    SSBCorner.CornerRadius = UDim.new(0, 10)
+    SSBCorner.Parent = StartSelectedBtn
+    local FlingAllBtn = Instance.new("TextButton")
+    FlingAllBtn.Position = UDim2.new(0.5, 5, 0, 295)
+    FlingAllBtn.Size = UDim2.new(0.5, -10, 0, 45)
+    FlingAllBtn.BackgroundColor3 = Config.Colors.Accent
+    FlingAllBtn.BorderSizePixel = 0
+    FlingAllBtn.Text = "FLING ALL"
+    FlingAllBtn.TextColor3 = Config.Colors.Text
+    FlingAllBtn.Font = Config.Font
+    FlingAllBtn.TextSize = 14
+    FlingAllBtn.Parent = MainFrame
+    local FABCorner = Instance.new("UICorner")
+    FABCorner.CornerRadius = UDim.new(0, 10)
+    FABCorner.Parent = FlingAllBtn
+    local StopBtn = Instance.new("TextButton")
+    StopBtn.Position = UDim2.new(0, 15, 0, 355)
+    StopBtn.Size = UDim2.new(1, -30, 0, 45)
+    StopBtn.BackgroundColor3 = Color3.fromRGB(120, 20, 20)
+    StopBtn.BorderSizePixel = 0
+    StopBtn.Text = "STOP OPERATION"
+    StopBtn.TextColor3 = Config.Colors.Text
+    StopBtn.Font = Config.Font
+    StopBtn.TextSize = 15
+    StopBtn.Parent = MainFrame
+    local STBCorner = Instance.new("UICorner")
+    STBCorner.CornerRadius = UDim.new(0, 10)
+    STBCorner.Parent = StopBtn
+    local function UpdateStatus()
+        local count = 0
+        for _ in pairs(SelectedFlingTargets) do count = count + 1 end
+        if FlingLoopActive then
+            StatusLabel.Text = "STATUS: OPERATION ACTIVE"
+            StatusLabel.TextColor3 = Config.Colors.Accent
+        else
+            StatusLabel.Text = "SELECTED TARGETS: " .. count
+            StatusLabel.TextColor3 = Config.Colors.TextDark
+        end
+    end
+    local function RefreshPlayerList()
+        for _, child in pairs(PlayerScrollFrame:GetChildren()) do child:Destroy() end
+        local PlayerList = Players:GetPlayers()
+        table.sort(PlayerList, function(a, b) return a.Name:lower() < b.Name:lower() end)
+        local yPosition = 5
+        for _, player in ipairs(PlayerList) do
+            if player ~= LocalPlayer then
+                local PlayerEntry = Instance.new("Frame")
+                PlayerEntry.Size = UDim2.new(1, -10, 0, 35)
+                PlayerEntry.Position = UDim2.new(0, 5, 0, yPosition)
+                PlayerEntry.BackgroundColor3 = Config.Colors.Main
+                PlayerEntry.BorderSizePixel = 0
+                PlayerEntry.Parent = PlayerScrollFrame
+                local PECorner = Instance.new("UICorner")
+                PECorner.CornerRadius = UDim.new(0, 8)
+                PECorner.Parent = PlayerEntry
+                local PEStroke = Instance.new("UIStroke")
+                PEStroke.Color = Config.Colors.Secondary
+                PEStroke.Thickness = 1
+                PEStroke.Parent = PlayerEntry
+                local Checkbox = Instance.new("Frame")
+                Checkbox.Size = UDim2.new(0, 20, 0, 20)
+                Checkbox.Position = UDim2.new(0, 8, 0.5, -10)
+                Checkbox.BackgroundColor3 = Config.Colors.Secondary
+                Checkbox.BorderSizePixel = 0
+                Checkbox.Parent = PlayerEntry
+                local CBCorner = Instance.new("UICorner")
+                CBCorner.CornerRadius = UDim.new(0, 5)
+                CBCorner.Parent = Checkbox
+                local Checkmark = Instance.new("TextLabel")
+                Checkmark.Size = UDim2.new(1, 0, 1, 0)
+                Checkmark.BackgroundTransparency = 1
+                Checkmark.Text = "✓"
+                Checkmark.TextColor3 = Config.Colors.Accent
+                Checkmark.TextSize = 14
+                Checkmark.Font = Config.Font
+                Checkmark.Visible = SelectedFlingTargets[player.Name] ~= nil
+                Checkmark.Parent = Checkbox
+                local NameLabel = Instance.new("TextLabel")
+                NameLabel.Size = UDim2.new(1, -45, 1, 0)
+                NameLabel.Position = UDim2.new(0, 35, 0, 0)
+                NameLabel.BackgroundTransparency = 1
+                NameLabel.Text = player.DisplayName
+                NameLabel.TextColor3 = Config.Colors.Text
+                NameLabel.TextSize = 13
+                NameLabel.Font = Config.Font
+                NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+                NameLabel.Parent = PlayerEntry
+                local ClickArea = Instance.new("TextButton")
+                ClickArea.Size = UDim2.new(1, 0, 1, 0)
+                ClickArea.BackgroundTransparency = 1
+                ClickArea.Text = ""
+                ClickArea.ZIndex = 2
+                ClickArea.Parent = PlayerEntry
+                ClickArea.MouseButton1Click:Connect(function()
+                    if SelectedFlingTargets[player.Name] then
+                        SelectedFlingTargets[player.Name] = nil
+                        Checkmark.Visible = false
+                        TweenService:Create(PEStroke, TweenInfo.new(0.2), {Color = Config.Colors.Secondary}):Play()
+                    else
+                        SelectedFlingTargets[player.Name] = player
+                        Checkmark.Visible = true
+                        TweenService:Create(PEStroke, TweenInfo.new(0.2), {Color = Config.Colors.Accent}):Play()
+                    end
+                    UpdateStatus()
+                end)
+                if SelectedFlingTargets[player.Name] then
+                    PEStroke.Color = Config.Colors.Accent
+                end
+                yPosition = yPosition + 40
+            end
+        end
+        PlayerScrollFrame.CanvasSize = UDim2.new(0, 0, 0, yPosition + 5)
+    end
+    local function ExecutionLoop(targetList)
+        if FlingLoopActive then return end
+        FlingLoopActive = true
+        UpdateStatus()
+        task.spawn(function()
+            while FlingLoopActive do
+                local currentList = {}
+                if targetList == "ALL" then
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer and p.Character then
+                            local isWhite = false
+                            for _, n in pairs(Settings.WhitelistNames) do if p.Name == n then isWhite = true break end end
+                            if not isWhite then table.insert(currentList, p) end
+                        end
+                    end
+                else
+                    for name, p in pairs(SelectedFlingTargets) do
+                        if p and p.Parent then table.insert(currentList, p) end
+                    end
+                end
+                if #currentList == 0 then break end
+                for _, target in ipairs(currentList) do
+                    if not FlingLoopActive then break end
+                    SkidFling(target)
+                    task.wait(0.05)
+                end
+                if targetList ~= "ALL" then break end
+                task.wait(0.5)
+            end
+            FlingLoopActive = false
+            UpdateStatus()
+            ForceCameraReset()
+        end)
+    end
+    StartSelectedBtn.MouseButton1Click:Connect(function() ExecutionLoop("SELECTED") end)
+    FlingAllBtn.MouseButton1Click:Connect(function() ExecutionLoop("ALL") end)
+    StopBtn.MouseButton1Click:Connect(function()
+        FlingLoopActive = false
+        UpdateStatus()
+        ForceCameraReset()
+    end)
+    CloseButton.MouseButton1Click:Connect(function()
+        FlingLoopActive = false
+        ScreenGui:Destroy()
+        DiabloFlingGUI = nil
+        Settings.MultiFlingEnabled = false
+        if UIElements.MultiFlingEnabled then UIElements.MultiFlingEnabled.Set(false) end
+    end)
+    RefreshPlayerList()
+    UpdateStatus()
+    Players.PlayerAdded:Connect(RefreshPlayerList)
+    Players.PlayerRemoving:Connect(RefreshPlayerList)
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -190)
+    MainFrame.BackgroundTransparency = 1
+    Shadow.ImageTransparency = 1
+    TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -160, 0.5, -210), BackgroundTransparency = 0}):Play()
+    TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
+end
+local function ToggleMultiFling(state)
+    Settings.MultiFlingEnabled = state
+    if state then
+        CreateAdvancedFlingGUI()
+    else
+        if DiabloFlingGUI then DiabloFlingGUI:Destroy() DiabloFlingGUI = nil end
+        FlingLoopActive = false
+        ForceCameraReset()
     end
 end
 local function ToggleAntiTouch(state)
@@ -2778,19 +3195,6 @@ local CombatTab = Window:Tab("Combat ⚔️")
 local AimbotTab = Window:Tab("Aimbot 🎯")
 local VisualsTab = Window:Tab("Visuals 👁️")
 local MovementTab = Window:Tab("Movement ⚡")
-CombatTab:Section("Fling 🌪️")
-UIElements.TouchFlingEnabled = CombatTab:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
-    ToggleFling(state)
-    SaveConfig(true)
-end)
-UIElements.ClickToFlingEnabled = CombatTab:Toggle("Click-to-Fling 🎯", Settings.ClickToFlingEnabled, function(state)
-    ToggleClickToFling(state)
-    SaveConfig(true)
-end)
-UIElements.AntiFlingEnabled = CombatTab:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
-    ToggleAntiFling(state)
-    SaveConfig(true)
-end)
 CombatTab:Section("Hitbox Expander")
 UIElements.HitboxExpanderEnabled = CombatTab:Toggle("Enable Expander 📦", Settings.HitboxExpanderEnabled, function(state)
     ToggleHitboxExpander(state)
@@ -2835,6 +3239,24 @@ CombatTab:Button("Clear Ignore List 🗑️", function()
         Text = "Ignore list cleared!",
         Duration = 3
     })
+end)
+CombatTab:Section("Fling 🌪️")
+UIElements.TouchFlingEnabled = CombatTab:Toggle("Touch Fling 💫", Settings.TouchFlingEnabled, function(state)
+    ToggleFling(state)
+    SaveConfig(true)
+end)
+UIElements.ClickToFlingEnabled = CombatTab:Toggle("Click-to-Fling 🎯", Settings.ClickToFlingEnabled, function(state)
+    ToggleClickToFling(state)
+    SaveConfig(true)
+end)
+UIElements.AntiFlingEnabled = CombatTab:Toggle("Anti-Fling 🛡️", Settings.AntiFlingEnabled, function(state)
+    ToggleAntiFling(state)
+    SaveConfig(true)
+end)
+CombatTab:Section("Multi Fling 🌪️🌪️")
+UIElements.MultiFlingEnabled = CombatTab:Toggle("Multi-Fling (Intense Mode) 🌪️", Settings.MultiFlingEnabled, function(state)
+    ToggleMultiFling(state)
+    SaveConfig(true)
 end)
 AimbotTab:Section("Aimbot / Camlock 🎯")
 AimbotFOVCircle = Drawing.new("Circle")
@@ -3736,6 +4158,13 @@ SettingsTab:Button("Server Hop", function()
 end)
 SettingsTab:Button("Small Server", function()
     FindSmallServer()
+end)
+SettingsTab:Section("External Scripts 📜")
+SettingsTab:Button("Infinite Yield", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+end)
+SettingsTab:Button("DEX Explorer", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
 end)
 SettingsTab:Section("Configuration 💾")
 SettingsTab:Button("Save Config 💾", function()
