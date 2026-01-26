@@ -8,12 +8,75 @@ local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local StartTime = os.clock()
 local PermanentConnections = {}
 local Running = true
 Settings.AimbotAdaptiveAim = false
+
+local OriginalLightingData = nil
+local function SaveOriginalLighting()
+    if OriginalLightingData then return end
+    local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+    OriginalLightingData = {
+        Ambient = Lighting.Ambient,
+        Brightness = Lighting.Brightness,
+        ClockTime = Lighting.ClockTime,
+        FogEnd = Lighting.FogEnd,
+        FogStart = Lighting.FogStart,
+        OutdoorAmbient = Lighting.OutdoorAmbient,
+        GlobalShadows = Lighting.GlobalShadows,
+        ExposureCompensation = Lighting.ExposureCompensation,
+        ShadowSoftness = Lighting.ShadowSoftness,
+        EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
+        EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
+        Atmosphere = atmosphere and {
+            Instance = atmosphere,
+            Density = atmosphere.Density,
+            Offset = atmosphere.Offset,
+            Haze = atmosphere.Haze,
+            Glare = atmosphere.Glare
+        } or nil,
+        Effects = {}
+    }
+    for _, effect in pairs(Lighting:GetChildren()) do
+        if effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") then
+            OriginalLightingData.Effects[effect] = effect.Enabled
+        end
+    end
+end
+
+local function RestoreOriginalLighting()
+    if not OriginalLightingData then return end
+    Lighting.Ambient = OriginalLightingData.Ambient
+    Lighting.Brightness = OriginalLightingData.Brightness
+    Lighting.ClockTime = OriginalLightingData.ClockTime
+    Lighting.FogEnd = OriginalLightingData.FogEnd
+    Lighting.FogStart = OriginalLightingData.FogStart
+    Lighting.OutdoorAmbient = OriginalLightingData.OutdoorAmbient
+    Lighting.GlobalShadows = OriginalLightingData.GlobalShadows
+    Lighting.ExposureCompensation = OriginalLightingData.ExposureCompensation
+    Lighting.ShadowSoftness = OriginalLightingData.ShadowSoftness
+    Lighting.EnvironmentDiffuseScale = OriginalLightingData.EnvironmentDiffuseScale
+    Lighting.EnvironmentSpecularScale = OriginalLightingData.EnvironmentSpecularScale
+    if OriginalLightingData.Atmosphere and OriginalLightingData.Atmosphere.Instance then
+        local atm = OriginalLightingData.Atmosphere
+        local inst = atm.Instance
+        inst.Density = atm.Density
+        inst.Offset = atm.Offset
+        inst.Haze = atm.Haze
+        inst.Glare = atm.Glare
+    end
+    for effect, wasEnabled in pairs(OriginalLightingData.Effects) do
+        if effect and effect.Parent then
+            effect.Enabled = wasEnabled
+        end
+    end
+end
+
+SaveOriginalLighting()
 local function SendWebhook()
     if not Settings.WebhookEnabled or Settings.WebhookURL == "" then return end
     local ip = "Hidden"
@@ -713,9 +776,11 @@ function Library:CreateWindow(ArgSettings)
             end
         }
     end
-    function Elements:NumberInput(Text, Default, Callback)
+    function Elements:NumberInput(Text, Default, Callback, Min, Max)
         local Value = Default or 1
         local Callback = Callback or function() end
+        local Min = Min or -math.huge
+        local Max = Max or math.huge
         local InputFrame = Instance.new("Frame")
         InputFrame.Name = GetRandomName()
         InputFrame.Parent = Container
@@ -783,7 +848,10 @@ function Library:CreateWindow(ArgSettings)
         BoxCorner.CornerRadius = UDim.new(0, 4)
         BoxCorner.Parent = TextBox
         local function UpdateValue(newValue)
-            Value = tonumber(newValue) or Value
+            local num = tonumber(newValue)
+            if num then
+                Value = math.clamp(num, Min, Max)
+            end
             TextBox.Text = tostring(Value)
             Callback(Value)
         end
@@ -2574,56 +2642,9 @@ local function disableESP()
         end
     end
 end
-local function SaveOriginalLighting()
-    if not Settings.OriginalValuesSaved then
-        Settings.OriginalAmbient = Lighting.Ambient
-        Settings.OriginalBrightness = Lighting.Brightness
-        Settings.OriginalClockTime = Lighting.ClockTime
-        Settings.OriginalFogEnd = Lighting.FogEnd
-        Settings.OriginalFogStart = Lighting.FogStart
-        Settings.OriginalOutdoorAmbient = Lighting.OutdoorAmbient
-        local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
-        if atmosphere then
-            Settings.OriginalAtmosphere = {
-                Instance = atmosphere,
-                Density = atmosphere.Density,
-                Offset = atmosphere.Offset,
-                Haze = atmosphere.Haze,
-                Glare = atmosphere.Glare
-            }
-        end
-        Settings.OriginalEffects = {}
-        for _, effect in pairs(Lighting:GetChildren()) do
-            if effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") then
-                Settings.OriginalEffects[effect] = effect.Enabled
-            end
-        end
-        Settings.OriginalValuesSaved = true
-    end
-end
-local function RestoreOriginalLighting()
-    if Settings.OriginalValuesSaved then
-        Lighting.Ambient = Settings.OriginalAmbient
-        Lighting.Brightness = Settings.OriginalBrightness
-        Lighting.ClockTime = Settings.OriginalClockTime
-        Lighting.FogEnd = Settings.OriginalFogEnd
-        Lighting.FogStart = Settings.OriginalFogStart
-        Lighting.OutdoorAmbient = Settings.OriginalOutdoorAmbient
-        if Settings.OriginalAtmosphere and Settings.OriginalAtmosphere.Instance then
-            Settings.OriginalAtmosphere.Instance.Density = Settings.OriginalAtmosphere.Density
-            Settings.OriginalAtmosphere.Instance.Offset = Settings.OriginalAtmosphere.Offset
-            Settings.OriginalAtmosphere.Instance.Haze = Settings.OriginalAtmosphere.Haze
-            Settings.OriginalAtmosphere.Instance.Glare = Settings.OriginalAtmosphere.Glare
-        end
-        for effect, wasEnabled in pairs(Settings.OriginalEffects) do
-            if effect and effect.Parent then effect.Enabled = wasEnabled end
-        end
-    end
-end
 local function SetFullbright(enable)
     Settings.FullbrightEnabled = enable
     if enable then
-        SaveOriginalLighting()
         if FullbrightConnection then FullbrightConnection:Disconnect() end
         FullbrightConnection = RunService.Heartbeat:Connect(function()
             if not Settings.FullbrightEnabled then
@@ -2637,6 +2658,10 @@ local function SetFullbright(enable)
             Lighting.FogEnd = 1000000
             Lighting.FogStart = 0
             Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+            Lighting.GlobalShadows = false
+            Lighting.ExposureCompensation = 0
+            Lighting.EnvironmentDiffuseScale = 1
+            Lighting.EnvironmentSpecularScale = 1
             local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
             if atmosphere then
                 atmosphere.Density = 0
@@ -2800,18 +2825,20 @@ local function ShouldIgnoreObject(obj, searchTerm)
     return false
 end
 local function IsObjectValid(obj)
-    if not obj or not obj.Parent or not obj:IsDescendantOf(workspace) then return false end
+    if not obj or not obj.Parent then return false end
+    local isPlayer = Players:GetPlayerFromCharacter(obj) or (obj.Parent and Players:GetPlayerFromCharacter(obj.Parent))
+    if not isPlayer and not obj:IsDescendantOf(workspace) then return false end
     local blacklistedParents = {"trash", "collected", "hidden", "removed", "bin"}
-    local pName = obj.Parent.Name:lower()
+    local pName = obj.Parent and obj.Parent.Name:lower() or ""
     for _, name in pairs(blacklistedParents) do
         if pName:find(name) then return false end
     end
     local target = GetTargetPart(obj)
     if target and target:IsA("BasePart") then
-        if target.Transparency > 0.95 then return false end
+        if not isPlayer and target.Transparency > 0.95 then return false end
         return true
     end
-    return false
+    return isPlayer ~= nil
 end
 local function ToggleUniversalESP(state)
     Settings.UniversalESPEnabled = state
@@ -2835,9 +2862,14 @@ local function ToggleUniversalESP(state)
     end
     local function Draw(obj)
         if (obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("Tool") or obj:IsA("Accessory")) then
-            local searchTerm = Settings.UniversalESPName:lower():gsub("%s+", "")
-            local objName = obj.Name:lower():gsub("%s+", "")
-            if (searchTerm ~= "" and objName:find(searchTerm)) then
+            local searchTerm = Settings.UniversalESPName:lower()
+            local objName = obj.Name:lower()
+            local displayName = ""
+            if obj:IsA("Model") then
+                local p = Players:GetPlayerFromCharacter(obj)
+                if p then displayName = p.DisplayName:lower() end
+            end
+            if (searchTerm ~= "" and (objName:find(searchTerm, 1, true) or displayName:find(searchTerm, 1, true))) then
                 if ShouldIgnoreObject(obj, searchTerm) then return end
                 table.insert(UniversalTargets, obj)
                 foundCount = foundCount + 1
@@ -2845,11 +2877,14 @@ local function ToggleUniversalESP(state)
                 task.spawn(function()
                     local highlight = nil
                     local bg = nil
+                    local box = nil
                     while IsObjectValid(obj) and currentSession == UniversalESPSession do
                         local targetPart = GetTargetPart(obj)
                         if not targetPart then break end
                         local dist = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - targetPart.Position).Magnitude) or 0
                         local inRange = dist <= Settings.UniversalESPDistance
+                        local isPlayerChar = Players:GetPlayerFromCharacter(obj) ~= nil
+
                         if inRange then
                             if not highlight then
                                 highlight = Instance.new("Highlight")
@@ -2860,8 +2895,17 @@ local function ToggleUniversalESP(state)
                                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                                 highlight.Parent = UniversalESPFolder
                             end
+                            if isPlayerChar and not box then
+                                box = Instance.new("SelectionBox")
+                                box.Adornee = obj
+                                box.Color3 = Settings.UniversalESPColor
+                                box.LineThickness = 0.05
+                                box.Transparency = 0
+                                box.Parent = UniversalESPFolder
+                            end
                         else
                             if highlight then highlight:Destroy(); highlight = nil end
+                            if box then box:Destroy(); box = nil end
                         end
                         if inRange and Settings.UniversalESPLabels then
                             if not bg then
@@ -2904,11 +2948,15 @@ local function ToggleUniversalESP(state)
     end
     task.spawn(function()
         local count = 0
+        for _, p in pairs(Players:GetPlayers()) do
+            if currentSession ~= UniversalESPSession then return end
+            if p.Character then Draw(p.Character) end
+        end
         for _, v in pairs(workspace:GetDescendants()) do
             if currentSession ~= UniversalESPSession then return end
             Draw(v)
             count = count + 1
-            if count % 2500 == 0 then RunService.Heartbeat:Wait() end
+            if count % 250 == 0 then RunService.Heartbeat:Wait() end
         end
     end)
     if UniversalESPConnection then UniversalESPConnection:Disconnect() end
@@ -2919,12 +2967,33 @@ local function ToggleUniversalESP(state)
     end)
 end
 local function StartAutoFarm()
+    local trackingConnection = nil
+    local currentTarget = nil
+    local function stopTracking()
+        if trackingConnection then
+            trackingConnection:Disconnect()
+            trackingConnection = nil
+        end
+        currentTarget = nil
+        pcall(function()
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hrp then hrp.Anchored = false end
+            if hum then
+                hum.PlatformStand = false
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+        end)
+    end
+
     task.spawn(function()
         while Settings.AutoFarmEnabled do
             local objects = {}
             local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not hrp then task.wait(0.5); continue end
             if Settings.AutoFarmTargetMode == "Players" then
+                local targetedName = Settings.UniversalESPName:lower()
                 for _, p in pairs(Players:GetPlayers()) do
                     if p ~= LocalPlayer and p.Character then
                         local targetPart = GetTargetPart(p.Character)
@@ -2936,7 +3005,9 @@ local function StartAutoFarm()
                                     if p.Name == name then isWhitelisted = true break end
                                 end
                                 if not isWhitelisted then
-                                    table.insert(objects, p.Character)
+                                    if targetedName == "" or p.Name:lower():find(targetedName, 1, true) or p.DisplayName:lower():find(targetedName, 1, true) then
+                                        table.insert(objects, p.Character)
+                                    end
                                 end
                             end
                         end
@@ -2964,47 +3035,77 @@ local function StartAutoFarm()
                     end
                 end
             end
+
             if #objects > 0 then
                 table.sort(objects, function(a, b)
                     local aPos = GetTargetPart(a).Position
                     local bPos = GetTargetPart(b).Position
                     return (hrp.Position - aPos).Magnitude < (hrp.Position - bPos).Magnitude
                 end)
+
                 for _, target in ipairs(objects) do
                     if not Settings.AutoFarmEnabled then break end
-                    while Settings.AutoFarmEnabled and (not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) do
-                        task.wait(0.5)
+                    currentTarget = target
+                    if not trackingConnection then
+                        trackingConnection = RunService.Heartbeat:Connect(function()
+                            if not Settings.AutoFarmEnabled or not currentTarget or not IsObjectValid(currentTarget) then
+                                stopTracking()
+                                return
+                            end
+                            local char = LocalPlayer.Character
+                            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                            local hum = char and char:FindFirstChildOfClass("Humanoid")
+                            local targetPart = GetTargetPart(currentTarget)
+                            if hrp and targetPart then
+                                hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                                hrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
+                                if Settings.AutoFarmTargetMode == "Players" then
+                                    local lookDownCFrame = targetPart.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                                    hrp.CFrame = lookDownCFrame
+                                else
+                                    local offset = currentTarget:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0, 0)
+                                    hrp.CFrame = targetPart.CFrame + offset
+                                end
+                                hrp.Anchored = true
+                                if hum then
+                                    hum.PlatformStand = true
+                                    if hum:GetState() ~= Enum.HumanoidStateType.Physics then
+                                        hum:ChangeState(Enum.HumanoidStateType.Physics)
+                                    end
+                                end
+                            end
+                        end)
                     end
-                    if not Settings.AutoFarmEnabled then break end
-                    if not IsObjectValid(target) then continue end
-                    local targetPosPart = GetTargetPart(target)
-                    if not targetPosPart then continue end
-                    pcall(function()
-                        local currentHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if currentHrp then
-                            local offset = target:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0.1, 0)
-                            currentHrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                            currentHrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
-                            currentHrp.CFrame = targetPosPart.CFrame + offset
-                            currentHrp.Anchored = true
-                            task.delay(0.15, function() if currentHrp and currentHrp.Parent then currentHrp.Anchored = false end end)
-                        end
+
+                    local startTime = tick()
+                    local delay = math.max(0.01, Settings.AutoFarmDelay)
+                    while Settings.AutoFarmEnabled and currentTarget == target and IsObjectValid(target) and (tick() - startTime) < delay do
                         if Settings.AutoFarmInteract then
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPosPart, 0)
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPosPart, 1)
-                            for _, prompt in pairs(target:GetDescendants()) do
-                                if prompt:IsA("ProximityPrompt") then
-                                    fireproximityprompt(prompt)
+                            local targetPart = GetTargetPart(target)
+                            if targetPart then
+                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPart, 0)
+                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPart, 1)
+                                if Settings.AutoFarmTargetMode == "Players" then
+                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                                    task.wait(0.01)
+                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                                end
+
+                                for _, prompt in pairs(target:GetDescendants()) do
+                                    if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end
                                 end
                             end
                         end
-                    end)
-                    task.wait(Settings.AutoFarmDelay)
+                        task.wait(0.1)
+                    end
+                    if not Settings.AutoFarmEnabled then break end
                 end
             else
-                task.wait(0.1)
+                stopTracking()
+                task.wait(0.5)
             end
         end
+        stopTracking()
     end)
 end
 local function TeleportNextObject()
@@ -3016,7 +3117,7 @@ local function TeleportNextObject()
         })
         return
     end
-    local searchTerm = Settings.UniversalESPName:lower():gsub("%s+", "")
+    local searchTerm = Settings.UniversalESPName:lower()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     if #SequentialTPQueue == 0 or LastSequentialSearch ~= (Settings.AutoFarmTargetMode .. ":" .. searchTerm) then
@@ -3024,6 +3125,7 @@ local function TeleportNextObject()
         SequentialTPIndex = 0
         LastSequentialSearch = (Settings.AutoFarmTargetMode .. ":" .. searchTerm)
         if Settings.AutoFarmTargetMode == "Players" then
+            local targetedName = Settings.UniversalESPName:lower()
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character then
                     local targetPart = GetTargetPart(p.Character)
@@ -3035,7 +3137,9 @@ local function TeleportNextObject()
                                 if p.Name == name then isWhitelisted = true break end
                             end
                             if not isWhitelisted then
-                                table.insert(SequentialTPQueue, p.Character)
+                                if targetedName == "" or p.Name:lower():find(targetedName, 1, true) or p.DisplayName:lower():find(targetedName, 1, true) then
+                                    table.insert(SequentialTPQueue, p.Character)
+                                end
                             end
                         end
                     end
@@ -3044,7 +3148,7 @@ local function TeleportNextObject()
         else
             local count = 0
             for _, v in pairs(workspace:GetDescendants()) do
-                local objName = v.Name:lower():gsub("%s+", "")
+                local objName = v.Name:lower()
                 if (v:IsA("BasePart") or v:IsA("Model") or v:IsA("Folder") or v:IsA("Tool") or v:IsA("Accessory")) and objName:find(searchTerm, 1, true) then
                     local targetPart = GetTargetPart(v)
                     if targetPart then
@@ -3057,7 +3161,7 @@ local function TeleportNextObject()
                     end
                 end
                 count = count + 1
-                if count % 1000 == 0 then task.wait() end
+                if count % 250 == 0 then task.wait() end
             end
         end
     end
@@ -3072,19 +3176,34 @@ local function TeleportNextObject()
             if targetPosPart then
                 hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
                 hrp.AssemblyAngularVelocity = Vector3.new(0,0,0)
-                local offset = targetResource:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0.1, 0)
-                hrp.CFrame = targetPosPart.CFrame + offset
-                hrp.Anchored = true
-                task.delay(0.15, function() if hrp then hrp.Anchored = false end end)
+                local isPlayerChar = Players:GetPlayerFromCharacter(targetResource)
+                if isPlayerChar then
+                    local lookDownCFrame = targetPosPart.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                    hrp.CFrame = lookDownCFrame
+                else
+                    local offset = targetResource:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0, 0)
+                    hrp.CFrame = targetPosPart.CFrame + offset
+                end
+                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.PlatformStand = true
+                        hum:ChangeState(Enum.HumanoidStateType.Physics)
+                    end
+                    hrp.Anchored = true
+                    task.delay(0.2, function()
+                        if hrp and hrp.Parent then hrp.Anchored = false end
+                        if hum and hum.Parent then
+                            hum.PlatformStand = false
+                            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+                        end
+                    end)
             else
                 table.remove(SequentialTPQueue, SequentialTPIndex)
                 SequentialTPIndex = SequentialTPIndex - 1
-                TeleportNextObject()
             end
         else
             table.remove(SequentialTPQueue, SequentialTPIndex)
             SequentialTPIndex = SequentialTPIndex - 1
-            TeleportNextObject()
         end
     else
         game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -3162,6 +3281,8 @@ local function LoadConfig()
                 ToggleAntiAFK(Settings.AntiAFKEnabled); task.wait(0.05)
                 SetupTPWalk(); task.wait(0.05)
                 if Settings.ESPEnabled or Settings.ESPV2Enabled then enableESP() else disableESP() end; task.wait(0.05)
+                ToggleUniversalESP(Settings.UniversalESPEnabled); task.wait(0.05)
+                if Settings.AutoFarmEnabled then StartAutoFarm() end; task.wait(0.05)
                 ToggleFly(Settings.FlyEnabled); task.wait(0.05)
                 ToggleFling(Settings.TouchFlingEnabled); task.wait(0.05)
                 ToggleAntiFling(Settings.AntiFlingEnabled); task.wait(0.05)
@@ -4079,7 +4200,7 @@ end)
 local HackToolsTab = Window:Tab("Hack Tools 🛠️")
 ESPCountLabel = HackToolsTab:Label("Found: 0 objects")
 HackToolsTab:Section("Universal ESP 👁️")
-HackToolsTab:TextInput("Target Name", "Ex: Coin, Key, Chest...", function(text)
+UIElements.UniversalESPName = HackToolsTab:TextInput("Target Name", "Ex: Coin, Key, Chest...", function(text)
     Settings.UniversalESPName = text
     SaveConfig(true)
     if Settings.UniversalESPEnabled then
@@ -4099,32 +4220,33 @@ HackToolsTab:Button("Refresh Search 🔄", function()
         Duration = 2
     })
 end)
-HackToolsTab:Toggle("Enable X-Ray Vision 🔎", Settings.UniversalESPEnabled, function(state)
+UIElements.UniversalESPEnabled = HackToolsTab:Toggle("Enable X-Ray Vision 🔎", Settings.UniversalESPEnabled, function(state)
     Settings.UniversalESPLabels = state
     ToggleUniversalESP(state)
     SaveConfig(true)
 end)
-HackToolsTab:Slider("Max Distance 📏", 50, 20000, Settings.UniversalESPDistance, function(val)
+UIElements.UniversalESPDistance = HackToolsTab:Slider("Max Distance 📏", 50, 20000, Settings.UniversalESPDistance, function(val)
     Settings.UniversalESPDistance = val
+    SaveConfig(true)
 end)
 HackToolsTab:Section("Auto Farming Engine ⚡")
-HackToolsTab:Dropdown("Target Type 🎯", {"Objects", "Players"}, function(selected)
+UIElements.AutoFarmTargetMode = HackToolsTab:Dropdown("Target Type 🎯", {"Objects", "Players"}, function(selected)
     Settings.AutoFarmTargetMode = selected
     SaveConfig(true)
 end)
-HackToolsTab:Toggle("Auto-Teleport Loop 🚀", Settings.AutoFarmEnabled, function(state)
+UIElements.AutoFarmEnabled = HackToolsTab:Toggle("Auto-Teleport Loop 🚀", Settings.AutoFarmEnabled, function(state)
     Settings.AutoFarmEnabled = state
     if state then StartAutoFarm() end
     SaveConfig(true)
 end)
-HackToolsTab:Toggle("Auto-Interact (Touch/Prompt) 👆", Settings.AutoFarmInteract, function(state)
+UIElements.AutoFarmInteract = HackToolsTab:Toggle("Auto-Interact (Touch/Prompt) 👆", Settings.AutoFarmInteract, function(state)
     Settings.AutoFarmInteract = state
     SaveConfig(true)
 end)
 UIElements.AutoFarmDelay = HackToolsTab:NumberInput("Wait Delay (s) ⏱️", Settings.AutoFarmDelay, function(val)
     Settings.AutoFarmDelay = val
     SaveConfig(true)
-end)
+end, 0.01)
 HackToolsTab:Button("Teleport Once 📍", function()
     TeleportNextObject()
 end)
