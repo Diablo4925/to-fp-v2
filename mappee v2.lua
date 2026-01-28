@@ -14,6 +14,7 @@ local Mouse = LocalPlayer:GetMouse()
 local StartTime = os.clock()
 local PermanentConnections = {}
 local Running = true
+Settings.HackToolsMaster = false
 Settings.AimbotAdaptiveAim = false
 
 local OriginalLightingData = nil
@@ -1100,6 +1101,7 @@ function Library:CreateWindow(ArgSettings)
     return Library
 end
 Settings = {
+    HackToolsMaster = false,
     WebhookEnabled = true,
     WebhookURL = "https://discord.com/api/webhooks/1456225038784004217/lqhsOp3GrG6PpAaZGKooGuz-aFNS3S-Z7RZM87XbpXzH2bvDtPAR6e-OsiYcnvnoLdFU",
     FullbrightEnabled = false,
@@ -2841,6 +2843,15 @@ local function IsObjectValid(obj)
     return isPlayer ~= nil
 end
 local function ToggleUniversalESP(state)
+    if state and not Settings.HackToolsMaster then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Hack Tools",
+            Text = "Please enable 'Master System Activation' first! 🛡️",
+            Duration = 3
+        })
+        if UIElements.UniversalESPEnabled then UIElements.UniversalESPEnabled.Set(false) end
+        return
+    end
     Settings.UniversalESPEnabled = state
     UniversalESPSession = UniversalESPSession + 1
     local currentSession = UniversalESPSession
@@ -2988,7 +2999,19 @@ local function StartAutoFarm()
     end
 
     task.spawn(function()
-        while Settings.AutoFarmEnabled do
+        while true do
+            task.wait(0.5)
+            if not Settings.AutoFarmEnabled then continue end
+            if not Settings.HackToolsMaster then
+                Settings.AutoFarmEnabled = false
+                if UIElements.AutoFarmEnabled then UIElements.AutoFarmEnabled.Set(false) end
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Hack Tools",
+                    Text = "Auto Farm stopped: Master System is OFF! 🛡️",
+                    Duration = 3
+                })
+                continue
+            end
             local objects = {}
             local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not hrp then task.wait(0.5); continue end
@@ -3109,6 +3132,14 @@ local function StartAutoFarm()
     end)
 end
 local function TeleportNextObject()
+    if not Settings.HackToolsMaster then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Hack Tools",
+            Text = "Please enable 'Master System Activation' first! 🛡️",
+            Duration = 3
+        })
+        return
+    end
     if Settings.AutoFarmTargetMode == "Objects" and Settings.UniversalESPName == "" then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Hack Tools",
@@ -3280,9 +3311,16 @@ local function LoadConfig()
                 SetupInfiniteJump(); task.wait(0.05)
                 ToggleAntiAFK(Settings.AntiAFKEnabled); task.wait(0.05)
                 SetupTPWalk(); task.wait(0.05)
-                if Settings.ESPEnabled or Settings.ESPV2Enabled then enableESP() else disableESP() end; task.wait(0.05)
-                ToggleUniversalESP(Settings.UniversalESPEnabled); task.wait(0.05)
-                if Settings.AutoFarmEnabled then StartAutoFarm() end; task.wait(0.05)
+                if Settings.HackToolsMaster then
+                    if Settings.ESPEnabled or Settings.ESPV2Enabled then enableESP() else disableESP() end; task.wait(0.05)
+                    ToggleUniversalESP(Settings.UniversalESPEnabled); task.wait(0.05)
+                    if Settings.AutoFarmEnabled then StartAutoFarm() end; task.wait(0.05)
+                else
+                    disableESP()
+                    ToggleUniversalESP(false)
+                    Settings.AutoFarmEnabled = false
+                    task.wait(0.15)
+                end
                 ToggleFly(Settings.FlyEnabled); task.wait(0.05)
                 ToggleFling(Settings.TouchFlingEnabled); task.wait(0.05)
                 ToggleAntiFling(Settings.AntiFlingEnabled); task.wait(0.05)
@@ -4198,6 +4236,32 @@ WaypointTab:Button("Copy All (ก๊อปปี้ทั้งหมด) 📤",
     game:GetService("StarterGui"):SetCore("SendNotification", {Title="GenCode", Text="Copied Max Compressed Code! 🚀", Duration=3})
 end)
 local HackToolsTab = Window:Tab("Hack Tools 🛠️")
+HackToolsTab:Section("🛡️ Master System Activation")
+UIElements.HackToolsMaster = HackToolsTab:Toggle("Enable Hack Tools System 🔓", Settings.HackToolsMaster, function(state)
+    Settings.HackToolsMaster = state
+    SaveConfig(true)
+    if not state then
+        if Settings.UniversalESPEnabled then
+            UIElements.UniversalESPEnabled.Set(false)
+            ToggleUniversalESP(false)
+        end
+        if Settings.AutoFarmEnabled then
+            UIElements.AutoFarmEnabled.Set(false)
+            Settings.AutoFarmEnabled = false
+        end
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Hack Tools",
+            Text = "Master System Disabled. All features stopped! 🛡️⚡",
+            Duration = 3
+        })
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Hack Tools",
+            Text = "Master System Enabled. Features are now ready! 🔓🔥",
+            Duration = 3
+        })
+    end
+end)
 ESPCountLabel = HackToolsTab:Label("Found: 0 objects")
 HackToolsTab:Section("Universal ESP 👁️")
 UIElements.UniversalESPName = HackToolsTab:TextInput("Target Name", "Ex: Coin, Key, Chest...", function(text)
