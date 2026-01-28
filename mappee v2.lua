@@ -1,4 +1,3 @@
--- [[ ADONIS ANTI-CHEAT BYPASS START ]] --
 local getinfo = getinfo or debug.getinfo
 local DEBUG = false
 local Hooked = {}
@@ -42,7 +41,6 @@ local OldDebugInfo; OldDebugInfo = hookfunction(getrenv().debug.info, newcclosur
     return OldDebugInfo(...)
 end))
 setthreadidentity(7)
--- [[ ADONIS ANTI-CHEAT BYPASS END ]] --
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
