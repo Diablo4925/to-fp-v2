@@ -19,7 +19,6 @@ local function RegisterConnection(connection)
     return connection
 end
 Settings.AimbotAdaptiveAim = false
-Settings.AutoReExecute = false
 
 local OriginalLightingData = nil
 local function SaveOriginalLighting()
@@ -1559,7 +1558,8 @@ Settings = {
     ThotChitEnabled = false,
     ThotChitSpeed = 60,
     ThotChitKey = Enum.KeyCode.X,
-    ThotChitSafeFall = true
+    ThotChitSafeFall = true,
+    AutoReExecute = false
 }
 local FolderName = "Diablo Script"
 local ConfigName = "config.json"
@@ -2235,6 +2235,20 @@ ToggleAutoReExecute = function(state)
         local scriptURL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
         local code = [[
             if game.PlaceId ~= ]]..TARGET_PLACE_ID..[[ then return end
+            
+            local function checkConfig()
+                local folder = "]]..FolderName..[["
+                local file = "]]..ConfigName..[["
+                if isfile(folder .. "/" .. file) then
+                    local raw = readfile(folder .. "/" .. file)
+                    if raw:find('"AutoReExecute":true') then
+                        return true
+                    end
+                end
+                return false
+            end
+
+            if not checkConfig() then return end
 
             local Players = game:GetService("Players")
             local LocalPlayer = Players.LocalPlayer
