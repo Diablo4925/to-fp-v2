@@ -139,8 +139,53 @@ end
 local function GetRandomName()
     return HttpService:GenerateGUID(false)
 end
+
+local PlayerPartCache = {}
+
+local function UpdatePlayerCache(player)
+    if not player then return end
+    local char = player.Character
+    if not char then 
+        PlayerPartCache[player.UserId] = nil
+        return 
+    end
+    
+    local parts = {
+        Head = char:FindFirstChild("Head"),
+        HumanoidRootPart = char:FindFirstChild("HumanoidRootPart"),
+        Torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso"),
+        Humanoid = char:FindFirstChildOfClass("Humanoid")
+    }
+    
+    PlayerPartCache[player.UserId] = parts
+end
+
+for _, p in pairs(game.Players:GetPlayers()) do
+    if p ~= LocalPlayer then
+        UpdatePlayerCache(p)
+        p.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            UpdatePlayerCache(p)
+        end)
+    end
+end
+
+game.Players.PlayerAdded:Connect(function(p)
+    if p ~= LocalPlayer then
+        p.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            UpdatePlayerCache(p)
+        end)
+    end
+end)
+
+game.Players.PlayerRemoving:Connect(function(p)
+    PlayerPartCache[p.UserId] = nil
+end)
 local Library = {}
 local espConnections = {}
+local ESPTrackedObjects = {}
+local ESPHeartbeatConnection = nil
 local TPWalkConnection = nil
 local NoClipConnection = nil
 local AntiScreenShakeConnection = nil
@@ -327,17 +372,23 @@ function Library:CreateWindow(ArgSettings)
 
     task.spawn(function()
         while Main and Main.Parent and Running do
-            GlowGradient.Rotation = GlowGradient.Rotation + 1
+            if Main.Visible then
+                GlowGradient.Rotation = GlowGradient.Rotation + 1
+            end
             task.wait()
         end
     end)
     
     task.spawn(function()
         while Main and Main.Parent and Running do
-            Library:Tween(MainGlow, {Transparency = 0.1}, 1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-            task.wait(1.2)
-            Library:Tween(MainGlow, {Transparency = 0.6}, 1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-            task.wait(1.2)
+            if Main.Visible then
+                Library:Tween(MainGlow, {Transparency = 0.1}, 1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+                task.wait(1.2)
+                Library:Tween(MainGlow, {Transparency = 0.6}, 1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+                task.wait(1.2)
+            else
+                task.wait(0.1)
+            end
         end
     end)
     
@@ -491,9 +542,12 @@ function Library:CreateWindow(ArgSettings)
         Minimized = not Minimized
         if Minimized then
             OldPosition = Main.Position
-            Library:Tween(Main, {Size = UDim2.new(0, 0, 0, 0)}, 0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-            task.delay(0.35, function()
-                if Minimized then Main.Visible = false end
+            Library:Tween(Main, {Size = UDim2.new(0, 60, 0, 60), Position = MinimizedIcon.Position, BackgroundTransparency = 1}, 0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            task.delay(0.45, function()
+                if Minimized then 
+                    Main.Visible = false 
+                    Main.BackgroundTransparency = 0.25 
+                end
             end)
             MinimizedIcon.Visible = true
             Library:Tween(MinimizedIcon, {Size = UDim2.new(0, 60, 0, 60)}, 0.5, Enum.EasingStyle.Exponential)
@@ -503,8 +557,9 @@ function Library:CreateWindow(ArgSettings)
                 if not Minimized then 
                     MinimizedIcon.Visible = false 
                     Main.Visible = true
-                    Main.Position = OldPosition
-                    Library:Tween(Main, {Size = UDim2.new(0, 600, 0, 400)}, 0.6, Enum.EasingStyle.Exponential)
+                    Main.Position = MinimizedIcon.Position
+                    Main.Size = UDim2.new(0, 60, 0, 60)
+                    Library:Tween(Main, {Size = UDim2.new(0, 600, 0, 400), Position = OldPosition, BackgroundTransparency = 0.25}, 0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
                 end
             end)
         end
@@ -575,7 +630,9 @@ function Library:CreateWindow(ArgSettings)
     NoCorner.Parent = NoBtn
     task.spawn(function()
         while ConfirmFrame.Parent do
-            RainbowGradient.Rotation = RainbowGradient.Rotation + 2
+            if Main.Visible and ConfirmFrame.Visible then
+                RainbowGradient.Rotation = RainbowGradient.Rotation + 2
+            end
             task.wait()
         end
     end)
@@ -624,11 +681,13 @@ function Library:CreateWindow(ArgSettings)
                     local Sway = math.random(-60, 60)
                     local startTime = os.clock()
                     while Running and (os.clock() - startTime) < RiseSpeed and Ember.Parent do
-                        local pct = (os.clock() - startTime) / RiseSpeed
-                        local currentSway = Sway * math.sin(pct * math.pi * 1.5)
-                        Ember.Position = UDim2.new(startX, currentSway, 1.1 - (1.4 * pct), 0)
-                        Ember.BackgroundTransparency = baseTrans + (1 - baseTrans) * pct
-                        Ember.Rotation = pct * 360
+                        if Main.Visible then
+                            local pct = (os.clock() - startTime) / RiseSpeed
+                            local currentSway = Sway * math.sin(pct * math.pi * 1.5)
+                            Ember.Position = UDim2.new(startX, currentSway, 1.1 - (1.4 * pct), 0)
+                            Ember.BackgroundTransparency = baseTrans + (1 - baseTrans) * pct
+                            Ember.Rotation = pct * 360
+                        end
                         task.wait()
                     end
                     if Ember.Parent then Ember:Destroy() end
@@ -1037,6 +1096,22 @@ function Library:CreateWindow(ArgSettings)
             local NewValue = math.floor(Min + ((Max - Min) * SizeScale))
             Fill.Size = UDim2.new(SizeScale, 0, 1, 0)
             ValueLabel.Text = tostring(NewValue)
+            if SizeScale == 0 or SizeScale == 1 then
+                if not Knob:GetAttribute("Snapped") then
+                    Knob:SetAttribute("Snapped", true)
+                    Library:Tween(Knob, {Size = UDim2.new(0, 20, 0, 20), BackgroundColor3 = Config.Colors.Accent}, 0.1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                    task.delay(0.1, function()
+                        if Dragging then
+                            Library:Tween(Knob, {Size = UDim2.new(0, 16, 0, 16), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                        end
+                    end)
+                end
+            else
+                if Knob:GetAttribute("Snapped") then
+                    Knob:SetAttribute("Snapped", false)
+                    Library:Tween(Knob, {Size = UDim2.new(0, 16, 0, 16), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}, 0.2, Enum.EasingStyle.Quart)
+                end
+            end
             Callback(NewValue)
         end
         local Dragging = false
@@ -1559,6 +1634,7 @@ Settings = {
     ThotChitSpeed = 60,
     ThotChitKey = Enum.KeyCode.X,
     ThotChitSafeFall = true,
+    ThotChitMobileMode = false,
     AutoReExecute = false,
     ResolverEnabled = false,
     AutoTriggerSyncEnabled = false,
@@ -1629,17 +1705,44 @@ local ThotChitPart = nil
 local ThotChitConnection = nil
 local ThotChitOrigZoomMin = 0
 local ThotChitOrigZoomMax = 0
-local ThotChitKeys = { W = false, A = false, S = false, D = false, Space = false, LeftControl = false }
+local ThotChitMobileBtn = nil
 local ToggleThotChit
+
+local function CreateGhostFlyMobileToggle()
+    if ThotChitMobileBtn then ThotChitMobileBtn:Destroy() end
+    
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = GetRandomName()
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = CoreGui
+    ThotChitMobileBtn = ScreenGui
+    
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Name = "GhostToggle"
+    ToggleBtn.Parent = ScreenGui
+    ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+    ToggleBtn.Position = UDim2.new(0.1, 0, 0.5, 0)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    ToggleBtn.BackgroundTransparency = 1
+    ToggleBtn.BorderSizePixel = 0
+    ToggleBtn.Text = "👻"
+    ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+    ToggleBtn.Font = Config.Font
+    ToggleBtn.TextSize = 40
+    ToggleBtn.AutoButtonColor = true
+    ToggleBtn.Active = true
+    ToggleBtn.Draggable = true
+    
+    ToggleBtn.MouseButton1Click:Connect(function()
+        if Settings.ThotChitEnabled then
+            ToggleThotChit(ThotChitPart == nil)
+        end
+    end)
+end
+
 
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
-    if input.KeyCode == Enum.KeyCode.W then ThotChitKeys.W = true end
-    if input.KeyCode == Enum.KeyCode.A then ThotChitKeys.A = true end
-    if input.KeyCode == Enum.KeyCode.S then ThotChitKeys.S = true end
-    if input.KeyCode == Enum.KeyCode.D then ThotChitKeys.D = true end
-    if input.KeyCode == Enum.KeyCode.Space then ThotChitKeys.Space = true end
-    if input.KeyCode == Enum.KeyCode.LeftControl then ThotChitKeys.LeftControl = true end
     
     if input.KeyCode == Settings.ThotChitKey then
         if Settings.ThotChitEnabled then
@@ -1648,14 +1751,6 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input, gpe)
-    if input.KeyCode == Enum.KeyCode.W then ThotChitKeys.W = false end
-    if input.KeyCode == Enum.KeyCode.A then ThotChitKeys.A = false end
-    if input.KeyCode == Enum.KeyCode.S then ThotChitKeys.S = false end
-    if input.KeyCode == Enum.KeyCode.D then ThotChitKeys.D = false end
-    if input.KeyCode == Enum.KeyCode.Space then ThotChitKeys.Space = false end
-    if input.KeyCode == Enum.KeyCode.LeftControl then ThotChitKeys.LeftControl = false end
-end)
 
 ToggleThotChit = function(state)
     local character = LocalPlayer.Character
@@ -1685,23 +1780,28 @@ ToggleThotChit = function(state)
             if not ThotChitPart then return end
             
             local moveVector = Vector3.new()
+            local verticalDir = 0
             
-            if ThotChitKeys.W then moveVector = moveVector + Vector3.new(0, 0, -1) end
-            if ThotChitKeys.S then moveVector = moveVector + Vector3.new(0, 0, 1) end
-            if ThotChitKeys.A then moveVector = moveVector + Vector3.new(-1, 0, 0) end
-            if ThotChitKeys.D then moveVector = moveVector + Vector3.new(1, 0, 0) end
-            if ThotChitKeys.Space then moveVector = moveVector + Vector3.new(0, 1, 0) end
-            if ThotChitKeys.LeftControl then moveVector = moveVector + Vector3.new(0, -1, 0) end
-
-            if moveVector.Magnitude > 0 then
-                moveVector = moveVector.Unit
+            local moveDirection = humanoid.MoveDirection
+            if moveDirection.Magnitude > 0 then
+                local relMove = camera.CFrame:VectorToObjectSpace(moveDirection)
+                moveVector = (camera.CFrame.LookVector * -relMove.Z) + (camera.CFrame.RightVector * relMove.X)
+            end
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) or humanoid.Jump then
+                verticalDir = 1
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                verticalDir = -1
             end
 
-            local lookVector = camera.CFrame.LookVector
-            local rightVector = camera.CFrame.RightVector
             local upVector = Vector3.new(0, 1, 0)
+            local velocity = moveVector + (upVector * verticalDir)
             
-            local velocity = (lookVector * -moveVector.Z) + (rightVector * moveVector.X) + (upVector * moveVector.Y)
+            if velocity.Magnitude > 0 then
+                velocity = velocity.Unit
+            end
+            
             ThotChitPart.CFrame = ThotChitPart.CFrame + (velocity * Settings.ThotChitSpeed * dt)
         end)
     else
@@ -3176,6 +3276,13 @@ local function enableESP()
     end
 end
 local function disableESP()
+    if ESPHeartbeatConnection then pcall(function() ESPHeartbeatConnection:Disconnect() end) ESPHeartbeatConnection = nil end
+    for obj, data in pairs(ESPTrackedObjects) do
+        if data.Highlight then pcall(function() data.Highlight:Destroy() end) end
+        if data.Box then pcall(function() data.Box:Destroy() end) end
+        if data.Billboard then pcall(function() data.Billboard:Destroy() end) end
+    end
+    ESPTrackedObjects = {}
     if espConnections.playerAdded then pcall(function() espConnections.playerAdded:Disconnect() end) espConnections.playerAdded = nil end
     if espConnections.playerRemoving then pcall(function() espConnections.playerRemoving:Disconnect() end) espConnections.playerRemoving = nil end
     for player, data in pairs(espConnections) do
@@ -3648,32 +3755,32 @@ SetupAimbot = function()
         end
         if isAiming then
             local function GetBestPart(p)
-                local primary = p.Character:FindFirstChild(Settings.AimbotPart, true)
-                if primary and IsVisible(p, primary, true) then return primary end
-                if Settings.AimbotAdaptiveAim then
-                    local bestResult = nil
-                    local bestPriority = -1
-                    local priorityMap = {["Head"]=10, ["UpperTorso"]=8, ["Torso"]=8, ["LowerTorso"]=7, ["HumanoidRootPart"]=6}
-                    for _, obj in pairs(p.Character:GetDescendants()) do
-                        if obj:IsA("BasePart") and obj.Transparency < 0.9 then
-                            if IsVisible(p, obj, true) then
-                                local priority = priorityMap[obj.Name] or 0
-                                if priority > bestPriority then
-                                    bestPriority = priority
-                                    bestResult = obj
-                                    if priority == 10 then break end
-                                end
-                            end
+                local cache = PlayerPartCache[p.UserId]
+                if cache then
+                    local primary = cache[Settings.AimbotPart]
+                    if primary and IsVisible(p, primary, true) then return primary end
+                    
+                    if Settings.AimbotAdaptiveAim then
+                        local priorities = {"Head", "Torso", "HumanoidRootPart"}
+                        for _, name in ipairs(priorities) do
+                            local part = cache[name]
+                            if part and IsVisible(p, part, true) then return part end
+                        end
+                    else
+                        local fallback = {"Head", "HumanoidRootPart", "Torso"}
+                        for _, name in ipairs(fallback) do
+                            local part = cache[name]
+                            if part and IsVisible(p, part, false) then return part end
                         end
                     end
-                    return bestResult
-                else
-                    local cores = {"Head", "HumanoidRootPart", "Torso", "UpperTorso"}
-                    for _, name in ipairs(cores) do
-                        local obj = p.Character:FindFirstChild(name, true)
-                        if obj and IsVisible(p, obj, false) then return obj end
-                    end
                 end
+                
+                local char = p.Character
+                if char then
+                    local primary = char:FindFirstChild(Settings.AimbotPart, true)
+                    if primary and IsVisible(p, primary, true) then return primary end
+                end
+                
                 return nil
             end
             local oldTarget = Target
@@ -4168,8 +4275,22 @@ end)
 MovementTab:Section("Thot Chit (Ghost Fly) 👻")
 UIElements.ThotChitEnabled = MovementTab:Toggle("Enable Thot Chit 👻", Settings.ThotChitEnabled, function(state)
     Settings.ThotChitEnabled = state
-    if not state and ThotChitPart ~= nil then
-        ToggleThotChit(false)
+    if state then
+        if Settings.ThotChitMobileMode then CreateGhostFlyMobileToggle() end
+    else
+        if ThotChitMobileBtn then ThotChitMobileBtn:Destroy() ThotChitMobileBtn = nil end
+        if ThotChitPart ~= nil then
+            ToggleThotChit(false)
+        end
+    end
+    SaveConfig(true)
+end)
+UIElements.ThotChitMobileMode = MovementTab:Toggle("Mobile Support Toggle 📱", Settings.ThotChitMobileMode, function(state)
+    Settings.ThotChitMobileMode = state
+    if state and Settings.ThotChitEnabled then
+        CreateGhostFlyMobileToggle()
+    else
+        if ThotChitMobileBtn then ThotChitMobileBtn:Destroy() ThotChitMobileBtn = nil end
     end
     SaveConfig(true)
 end)
@@ -4717,82 +4838,105 @@ ToggleUniversalESP = function(state)
             end
             if searchTerm ~= "" and (objName:find(searchTerm, 1, true) or displayName:find(searchTerm, 1, true)) then
                 if ShouldIgnoreObject(obj, searchTerm) then return end
+                if ESPTrackedObjects[obj] then return end
+                
                 table.insert(UniversalTargets, obj)
                 foundCount = foundCount + 1
                 updateCount()
-                task.spawn(function()
-                    local highlight, bg, box = nil, nil, nil
-                    while IsObjectValid(obj) and currentSession == UniversalESPSession do
-                        local targetPart = GetTargetPart(obj)
-                        if not targetPart then break end
-                        local dist = (LocalPlayer.Character
-                            and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            and (LocalPlayer.Character.HumanoidRootPart.Position - targetPart.Position).Magnitude) or 0
-                        local inRange = dist <= Settings.UniversalESPDistance
-                        local isPlayerChar = Players:GetPlayerFromCharacter(obj) ~= nil
-
-                        if inRange then
-                            if not highlight then
-                                highlight = Instance.new("Highlight")
-                                highlight.Adornee = obj
-                                highlight.FillColor = Settings.UniversalESPColor
-                                highlight.FillTransparency = 0.4
-                                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                highlight.Parent = UniversalESPFolder
-                            end
-                            if isPlayerChar and not box then
-                                box = Instance.new("SelectionBox")
-                                box.Adornee = obj
-                                box.Color3 = Settings.UniversalESPColor
-                                box.LineThickness = 0.05
-                                box.Transparency = 0
-                                box.Parent = UniversalESPFolder
-                            end
-                        else
-                            if highlight then highlight:Destroy(); highlight = nil end
-                            if box then box:Destroy(); box = nil end
-                        end
-
-                        if inRange and Settings.UniversalESPLabels then
-                            if not bg then
-                                bg = Instance.new("BillboardGui")
-                                bg.Adornee = targetPart
-                                bg.Size = UDim2.new(0, 100, 0, 40)
-                                bg.StudsOffset = Vector3.new(0, 2, 0)
-                                bg.AlwaysOnTop = true
-                                bg.Parent = UniversalESPFolder
-                                local tl = Instance.new("TextLabel")
-                                tl.Name = "Label"
-                                tl.BackgroundTransparency = 1
-                                tl.Size = UDim2.new(1, 0, 1, 0)
-                                tl.Font = Enum.Font.GothamBold
-                                tl.TextColor3 = Settings.UniversalESPColor
-                                tl.TextStrokeTransparency = 0
-                                tl.TextSize = 14
-                                tl.Parent = bg
-                            end
-                            local tl = bg:FindFirstChild("Label")
-                            if tl then tl.Text = string.format("%s\n[%d m]", obj.Name, math.floor(dist)) end
-                        else
-                            if bg then bg:Destroy(); bg = nil end
-                        end
-                        task.wait(1)
-                    end
-                    for i, v in ipairs(UniversalTargets) do
-                        if v == obj then
-                            table.remove(UniversalTargets, i)
-                            foundCount = foundCount - 1
-                            updateCount()
-                            break
-                        end
-                    end
-                    if highlight then highlight:Destroy() end
-                    if bg then bg:Destroy() end
-                end)
+                
+                ESPTrackedObjects[obj] = {
+                    TargetPart = GetTargetPart(obj),
+                    Highlight = nil,
+                    Box = nil,
+                    Billboard = nil
+                }
             end
         end
     end
+
+    if ESPHeartbeatConnection then ESPHeartbeatConnection:Disconnect() end
+    ESPHeartbeatConnection = RunService.Heartbeat:Connect(function()
+        if currentSession ~= UniversalESPSession then
+            if ESPHeartbeatConnection then ESPHeartbeatConnection:Disconnect() ESPHeartbeatConnection = nil end
+            return
+        end
+
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+        for obj, data in pairs(ESPTrackedObjects) do
+            if not IsObjectValid(obj) then
+                if data.Highlight then data.Highlight:Destroy() end
+                if data.Box then data.Box:Destroy() end
+                if data.Billboard then data.Billboard:Destroy() end
+                ESPTrackedObjects[obj] = nil
+                for i, v in ipairs(UniversalTargets) do
+                    if v == obj then
+                        table.remove(UniversalTargets, i)
+                        foundCount = foundCount - 1
+                        updateCount()
+                        break
+                    end
+                end
+                continue
+            end
+
+            local targetPart = data.TargetPart or GetTargetPart(obj)
+            if not targetPart then continue end
+            
+            local dist = hrp and (hrp.Position - targetPart.Position).Magnitude or 0
+            local inRange = dist <= Settings.UniversalESPDistance
+            local isPlayerChar = Players:GetPlayerFromCharacter(obj) ~= nil
+
+            if inRange then
+                if not data.Highlight then
+                    data.Highlight = Instance.new("Highlight")
+                    data.Highlight.Adornee = obj
+                    data.Highlight.FillColor = Settings.UniversalESPColor
+                    data.Highlight.FillTransparency = 0.4
+                    data.Highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    data.Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    data.Highlight.Parent = UniversalESPFolder
+                end
+                if isPlayerChar and not data.Box then
+                    data.Box = Instance.new("SelectionBox")
+                    data.Box.Adornee = obj
+                    data.Box.Color3 = Settings.UniversalESPColor
+                    data.Box.LineThickness = 0.05
+                    data.Box.Transparency = 0
+                    data.Box.Parent = UniversalESPFolder
+                end
+            else
+                if data.Highlight then data.Highlight:Destroy(); data.Highlight = nil end
+                if data.Box then data.Box:Destroy(); data.Box = nil end
+            end
+
+            if inRange and Settings.UniversalESPLabels then
+                if not data.Billboard then
+                    data.Billboard = Instance.new("BillboardGui")
+                    data.Billboard.Adornee = targetPart
+                    data.Billboard.Size = UDim2.new(0, 100, 0, 40)
+                    data.Billboard.StudsOffset = Vector3.new(0, 2, 0)
+                    data.Billboard.AlwaysOnTop = true
+                    data.Billboard.Parent = UniversalESPFolder
+                    
+                    local tl = Instance.new("TextLabel")
+                    tl.Name = "Label"
+                    tl.BackgroundTransparency = 1
+                    tl.Size = UDim2.new(1, 0, 1, 0)
+                    tl.Font = Enum.Font.GothamBold
+                    tl.TextColor3 = Settings.UniversalESPColor
+                    tl.TextStrokeTransparency = 0
+                    tl.TextSize = 14
+                    tl.Parent = data.Billboard
+                end
+                local tl = data.Billboard:FindFirstChild("Label")
+                if tl then tl.Text = string.format("%s\n[%d m]", obj.Name, math.floor(dist)) end
+            else
+                if data.Billboard then data.Billboard:Destroy(); data.Billboard = nil end
+            end
+        end
+    end)
 
     task.spawn(function()
         local count = 0
@@ -5114,6 +5258,9 @@ task.spawn(function()
     end
     task.wait(1)
     if LoadConfig() then
+        if Settings.ThotChitEnabled and Settings.ThotChitMobileMode then
+            CreateGhostFlyMobileToggle()
+        end
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Diablo Script",
             Text = "Settings Auto-Loaded! ⚡",
@@ -5183,4 +5330,3 @@ function Library:Unload()
     print("Diablo Hub fully unloaded! 🧹🛡️")
 end
 return Library
-
