@@ -2236,7 +2236,26 @@ ToggleAutoReExecute = function(state)
         local code = [[
             if game.PlaceId ~= ]]..TARGET_PLACE_ID..[[ then return end
 
-            task.wait(3)
+            local Players = game:GetService("Players")
+            local LocalPlayer = Players.LocalPlayer
+
+            local start = tick()
+            local timeout = 15 
+
+            local function characterReady(char)
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                return hum and root and hum.Health > 0 and hum.WalkSpeed > 0
+            end
+
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+            while not characterReady(char) do
+                if tick() - start > timeout then break end
+                task.wait(0.2)
+                char = LocalPlayer.Character
+            end
+
             loadstring(game:HttpGet("]]..scriptURL..[["))()
         ]]
         if syn and syn.queue_on_teleport then
@@ -4758,7 +4777,7 @@ end
 StartAutoFarm = function()
     local farmActive = true
     local currentTarget = nil
-    local interactionRadius = 15 -- Parallel collection radius
+    local interactionRadius = 15
 
     local function stopTracking()
         farmActive = false
@@ -4775,7 +4794,6 @@ StartAutoFarm = function()
         end)
     end
 
-    -- [Position Locking Thread]
     task.spawn(function()
         local connection
         connection = RunService.Heartbeat:Connect(function()
@@ -4815,15 +4833,13 @@ StartAutoFarm = function()
         end)
     end)
 
-    -- [Parallel Interaction Thread]
     task.spawn(function()
         while Settings.AutoFarmEnabled and farmActive do
-            task.wait(0.01) -- High frequency scanning
+            task.wait(0.01)
             local char = LocalPlayer.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             if not hrp or not Settings.AutoFarmInteract then continue end
 
-            -- Scan radius for Parallel Collection
             local nearby = {}
             if Settings.AutoFarmTargetMode == "Players" then
                 for _, p in pairs(Players:GetPlayers()) do
@@ -4845,7 +4861,6 @@ StartAutoFarm = function()
                 end
             end
 
-            -- Fire Parallel Interactions
             for _, obj in ipairs(nearby) do
                 local tp = GetTargetPart(obj)
                 if tp then
@@ -4856,7 +4871,6 @@ StartAutoFarm = function()
                 end
             end
             
-            -- Player Attack (if target mode is players)
             if Settings.AutoFarmTargetMode == "Players" and #nearby > 0 then
                 VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
                 task.wait(0.01)
@@ -4865,13 +4879,11 @@ StartAutoFarm = function()
         end
     end)
 
-    -- [Target Acquisition & Management Thread]
     task.spawn(function()
         while Settings.AutoFarmEnabled and farmActive do
             local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not hrp then task.wait(0.1); continue end
 
-            -- Find closest target
             local bestTarget = nil
             local minDist = math.huge
             local searchTerm = Settings.UniversalESPName:lower()
@@ -4915,7 +4927,6 @@ StartAutoFarm = function()
                 local startTime = tick()
                 local waitLimit = math.max(0.01, Settings.AutoFarmDelay)
                 
-                -- Stay on target until collected or timeout
                 while Settings.AutoFarmEnabled and farmActive and currentTarget == bestTarget and IsObjectValid(bestTarget) and (tick() - startTime) < waitLimit do
                     task.wait()
                 end
@@ -5014,7 +5025,6 @@ TeleportNextObject = function()
                 if hum then hum.PlatformStand = true; hum:ChangeState(Enum.HumanoidStateType.Physics) end
                 hrp.Anchored = true
                 
-                -- Fast Interaction on Teleport
                 if Settings.AutoFarmInteract then
                     firetouchinterest(hrp, targetPosPart, 0); firetouchinterest(hrp, targetPosPart, 1)
                     for _, p in pairs(targetResource:GetDescendants()) do
