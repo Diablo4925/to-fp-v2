@@ -1559,7 +1559,10 @@ Settings = {
     ThotChitSpeed = 60,
     ThotChitKey = Enum.KeyCode.X,
     ThotChitSafeFall = true,
-    AutoReExecute = false
+    AutoReExecute = false,
+    ResolverEnabled = false,
+    AutoTriggerSyncEnabled = false,
+    AimbotAdaptiveAim = false
 }
 local FolderName = "Diablo Script"
 local ConfigName = "config.json"
@@ -3522,9 +3525,11 @@ CombatTab:Dropdown("Ignore Player 🚫", {}, function(selected)
             Duration = 3
         })
     end
+    SaveConfig(true)
 end)
 CombatTab:Button("Clear Ignore List 🗑️", function()
     Settings.HitboxIgnoreList = {}
+    SaveConfig(true)
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Hitbox Expander",
         Text = "Ignore list cleared!",
@@ -3765,9 +3770,11 @@ UIElements.AimbotTeamCheck = AimbotTab:Toggle("Team Check 🛡️", Settings.Aim
 end)
 UIElements.AimbotWallCheck = AimbotTab:Toggle("Wall Check 🧱", Settings.AimbotWallCheck, function(state)
     Settings.AimbotWallCheck = state
+    SaveConfig(true)
 end)
 UIElements.AimbotShowFOV = AimbotTab:Toggle("Show FOV Circle ⭕", Settings.AimbotShowFOV, function(state)
     Settings.AimbotShowFOV = state
+    SaveConfig(true)
 end)
 UIElements.AimbotPrediction = AimbotTab:Toggle("Enable Prediction 🔮", Settings.AimbotPrediction, function(state)
     Settings.AimbotPrediction = state
@@ -3854,12 +3861,15 @@ RunService.RenderStepped:Connect(function()
 end)
 UIElements.TriggerBotV1Enabled = AimbotTab:Toggle("TriggerBot V1 (Semi) 🔫", Settings.TriggerBotV1Enabled, function(state)
     Settings.TriggerBotV1Enabled = state
+    SaveConfig(true)
 end)
 UIElements.TriggerBotV2Enabled = AimbotTab:Toggle("TriggerBot V2 (Rage Mode) 💀🔥", Settings.TriggerBotV2Enabled, function(state)
     Settings.TriggerBotV2Enabled = state
+    SaveConfig(true)
 end)
 UIElements.TriggerBotTeamCheck = AimbotTab:Toggle("Team Check 🛡️", Settings.TriggerBotTeamCheck, function(state)
     Settings.TriggerBotTeamCheck = state
+    SaveConfig(true)
 end)
 AimbotTab:Section("Whitelist Management (Aimbot & TriggerBot) 🛡️")
 AimbotTab:Dropdown("Add/Remove Player 👤", {}, function(selected)
@@ -3939,9 +3949,11 @@ VisualsTab:Dropdown("Ally Management 🛡️", {}, function(selected)
             Duration = 3
         })
     end
+    SaveConfig(true)
 end)
 VisualsTab:Button("Clear Ally List 🗑️", function()
     Settings.AllyNames = {}
+    SaveConfig(true)
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Ally System",
         Text = "Ally list cleared!",
@@ -3950,6 +3962,7 @@ VisualsTab:Button("Clear Ally List 🗑️", function()
 end)
 UIElements.FullbrightEnabled = VisualsTab:Toggle("Fullbright ☀️", Settings.FullbrightEnabled, function(state)
     SetFullbright(state)
+    SaveConfig(true)
 end)
 VisualsTab:Button("Deep Map Clean 🧹", function()
     ToggleMapCleaner()
@@ -3957,9 +3970,11 @@ end)
 VisualsTab:Section("Camera Controls 🎥")
 UIElements.FreecamEnabled = VisualsTab:Toggle("Freecam 🚁", Settings.FreecamEnabled, function(state)
     ToggleFreecam(state)
+    SaveConfig(true)
 end)
-UIElements.FreecamSpeed = VisualsTab:NumberInput("Freecam Speed 🏎️", 1, function(value)
+UIElements.FreecamSpeed = VisualsTab:NumberInput("Freecam Speed 🏎️", Settings.FreecamSpeed, function(value)
     Settings.FreecamSpeed = value
+    SaveConfig(true)
 end)
 VisualsTab:Dropdown("Spectate Player 📹", {}, function(selected)
     SpectatePlayer(selected)
@@ -3969,15 +3984,18 @@ VisualsTab:Button("Reset Camera 🎥", function()
 end)
 UIElements.AntiScreenShakeEnabled = VisualsTab:Toggle("Anti-Screen Shake 📸", Settings.AntiScreenShakeEnabled, function(state)
     ToggleAntiScreenShake(state)
+    SaveConfig(true)
 end)
 UIElements.ZoomUnlockerEnabled = VisualsTab:Toggle("Zoom Unlocker 🔭", Settings.ZoomUnlockerEnabled, function(state)
     ToggleZoomUnlocker(state)
+    SaveConfig(true)
 end)
 UIElements.MaxZoomDistance = VisualsTab:NumberInput("Max Zoom Distance", Settings.MaxZoomDistance, function(value)
     Settings.MaxZoomDistance = value
     if Settings.ZoomUnlockerEnabled then
         ToggleZoomUnlocker(true)
     end
+    SaveConfig(true)
 end)
 VisualsTab:Section("Radar System 📡")
 RadarGUI = Instance.new("ScreenGui")
@@ -4104,27 +4122,34 @@ end)
 MovementTab:Section("Movement Tweaks ⚡")
 UIElements.FlyEnabled = MovementTab:Toggle("Fly 🕊️", Settings.FlyEnabled, function(state)
     ToggleFly(state)
+    SaveConfig(true)
 end)
-UIElements.FlySpeed = MovementTab:NumberInput("Fly Speed 🚀", 1, function(value)
+UIElements.FlySpeed = MovementTab:NumberInput("Fly Speed 🚀", Settings.FlySpeed, function(value)
     Settings.FlySpeed = value
+    SaveConfig(true)
 end)
 UIElements.TPWalkEnabled = MovementTab:Toggle("TP Walk ⚡", Settings.TPWalkEnabled, function(state)
     Settings.TPWalkEnabled = state
     SetupTPWalk()
+    SaveConfig(true)
 end)
-UIElements.TPWalkSpeed = MovementTab:NumberInput("TP Speed 🎯", 1, function(value)
+UIElements.TPWalkSpeed = MovementTab:NumberInput("TP Speed 🎯", Settings.TPWalkSpeed, function(value)
     Settings.TPWalkSpeed = value
+    SaveConfig(true)
 end)
 UIElements.WalkOnWaterEnabled = MovementTab:Toggle("Walk on Water 🌊", Settings.WalkOnWaterEnabled, function(state)
     ToggleWalkOnWater(state)
+    SaveConfig(true)
 end)
 UIElements.InfiniteJumpEnabled = MovementTab:Toggle("Infinite Jump 🦘", Settings.InfiniteJumpEnabled, function(state)
     Settings.InfiniteJumpEnabled = state
     SetupInfiniteJump()
+    SaveConfig(true)
 end)
-UIElements.NoClipEnabled = MovementTab:Toggle("NoClip 👻", Settings.NoClipEnabled, function(state)
+UIElements.NoClipEnabled = MovementTab:Toggle("NoClip  Ghost 👻", Settings.NoClipEnabled, function(state)
     Settings.NoClipEnabled = state
     SetupNoClip()
+    SaveConfig(true)
 end)
 MovementTab:Dropdown("Teleport to Player 📍", {}, function(selected)
     local target = Players:FindFirstChild(selected)
@@ -4134,6 +4159,7 @@ MovementTab:Dropdown("Teleport to Player 📍", {}, function(selected)
 end)
 UIElements.AutoRespawnTPEnabled = MovementTab:Toggle("Auto Tp Last Death ♻️", Settings.AutoRespawnTPEnabled, function(state)
     Settings.AutoRespawnTPEnabled = state
+    SaveConfig(true)
 end)
 MovementTab:Button("TP to Last Death 💀", function()
     TeleportToLastDeath()
