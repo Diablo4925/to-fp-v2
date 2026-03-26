@@ -159,6 +159,8 @@ function RegisterConnection(conn)
     table.insert(PermanentConnections, conn)
     return conn
 end
+
+local ToggleFly, ToggleThotChit, ToggleSpinBot, RejoinServer, ServerHop, FindSmallServer, ToggleWalkOnWater, ToggleRemoveBlur, ToggleFPSBooster, ToggleFreecam, ToggleAntiAFK, ToggleFling, ToggleAntiFling, ToggleHitboxExpander, ToggleInstantInteract, ToggleClickToFling, ToggleUniversalESP, StartAutoFarm, TeleportNextObject, ToggleAntiTouch, ToggleMultiFling, ToggleAntiScreenShake, ToggleZoomUnlocker, SetupAimbot, SpectatePlayer, TeleportToLastDeath, ToggleMapCleaner
 local TweenService = game:GetService("TweenService")
 
 local Config = {
@@ -1563,7 +1565,7 @@ local ConfigName = "config.json"
 local UIElements = {}
 local RadarFrame = nil
 local RadarFrame = nil
-local function ToggleFly(state)
+ToggleFly = function(state)
     Settings.FlyEnabled = state
     if state then
         local character = LocalPlayer.Character
@@ -1727,7 +1729,7 @@ ToggleThotChit = function(state)
     end
 end
 local SpinBotConnection = nil
-local function ToggleSpinBot(state)
+ToggleSpinBot = function(state)
     Settings.SpinBotEnabled = state
     if state then
         if SpinBotConnection then SpinBotConnection:Disconnect() end
@@ -1750,7 +1752,7 @@ local function ToggleSpinBot(state)
         end
     end
 end
-local function RejoinServer()
+RejoinServer = function()
     if #Players:GetPlayers() <= 1 then
         LocalPlayer:Kick("\nRejoining...")
         task.wait()
@@ -1759,7 +1761,7 @@ local function RejoinServer()
         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     end
 end
-local function ServerHop()
+ServerHop = function()
     local PlaceId = game.PlaceId
     local CurrentJobId = game.JobId
     local function GetServers(cursor)
@@ -1788,7 +1790,7 @@ local function ServerHop()
         end
     end)
 end
-local function FindSmallServer()
+FindSmallServer = function()
     local CONFIG = {
         MaxAttempts = 9999,
         ServersPerPage = 100,
@@ -1857,7 +1859,7 @@ local function FindSmallServer()
 end
 local WaterPart = nil
 local WaterConnection = nil
-local function ToggleWalkOnWater(state)
+ToggleWalkOnWater = function(state)
     Settings.WalkOnWaterEnabled = state
     if state then
         if not WaterPart then
@@ -1897,7 +1899,7 @@ local function ToggleWalkOnWater(state)
     end
 end
 local RemoveBlurConnection = nil
-local function ToggleRemoveBlur(state)
+ToggleRemoveBlur = function(state)
     Settings.RemoveBlurEnabled = state
     if state then
         if RemoveBlurConnection then RemoveBlurConnection:Disconnect() end
@@ -1927,7 +1929,7 @@ local function ToggleRemoveBlur(state)
     end
 end
 local FPSBoosterConnection = nil
-local function ToggleFPSBooster(state)
+ToggleFPSBooster = function(state)	
     Settings.FPSBoosterEnabled = state
     if state then
         Settings.FPSBoosterCache = {}
@@ -2021,7 +2023,7 @@ local function ToggleFPSBooster(state)
     end
 end
 local DronePart = nil
-local function ToggleFreecam(state)
+ToggleFreecam = function(state)
     Settings.FreecamEnabled = state
     local Camera = workspace.CurrentCamera
     if state then
@@ -2085,7 +2087,7 @@ local function ToggleFreecam(state)
         if DronePart then DronePart:Destroy() DronePart = nil end
     end
 end
-local function FindSmallServer()
+FindSmallServer = function()
     local PlaceId = game.PlaceId
     local function getServers(cursor)
         local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -2148,7 +2150,7 @@ local function FindSmallServer()
     end)
 end
 local LastDeathPosition = nil
-local function TeleportToLastDeath()
+TeleportToLastDeath = function()
     if LastDeathPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = LastDeathPosition
         game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -2191,7 +2193,7 @@ local function SetupDeathRecall()
         task.spawn(function() onCharacterAdded(LocalPlayer.Character) end)
     end
 end
-local function ToggleMapCleaner()
+ToggleMapCleaner = function()
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("BasePart") then
             if v.Transparency == 1 and not v:IsA("MeshPart") then
@@ -2212,7 +2214,7 @@ local function ToggleMapCleaner()
         Duration = 3
     })
 end
-local function ToggleAntiAFK(state)
+ToggleAntiAFK = function(state)
     Settings.AntiAFKEnabled = state
     if state then
         local virtualUser = game:GetService("VirtualUser")
@@ -2224,7 +2226,7 @@ local function ToggleAntiAFK(state)
         end)
     end
 end
-local function ToggleFling(state)
+ToggleFling = function(state)
     Settings.TouchFlingEnabled = state
     if state then
         task.spawn(function()
@@ -2263,7 +2265,7 @@ local function ToggleFling(state)
         end
     end
 end
-local function ToggleAntiFling(state)
+ToggleAntiFling = function(state)
     Settings.AntiFlingEnabled = state
     if state then
         task.spawn(function()
@@ -2333,7 +2335,7 @@ local function UpdateHitboxes()
     end
 end
 local HitboxConnection = nil
-local function ToggleHitboxExpander(state)
+ToggleHitboxExpander = function(state)
     Settings.HitboxExpanderEnabled = state
     if state then
         if HitboxConnection then HitboxConnection:Disconnect() end
@@ -2348,7 +2350,7 @@ local function ToggleHitboxExpander(state)
 end
 local InstantInteractConnection = nil
 local OriginalPrompts = {}
-local function ToggleInstantInteract(state)
+ToggleInstantInteract = function(state)
     Settings.InstantInteractEnabled = state
     if state then
         for _, prompt in pairs(workspace:GetDescendants()) do
@@ -2385,7 +2387,7 @@ local function ToggleInstantInteract(state)
     end
 end
 local ClickToFlingConnection = nil
-local function ToggleClickToFling(state)
+ToggleClickToFling = function(state)
     Settings.ClickToFlingEnabled = state
     if state then
         if ClickToFlingConnection then ClickToFlingConnection:Disconnect() end
@@ -2829,7 +2831,7 @@ local function CreateAdvancedFlingGUI()
     TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -160, 0.5, -210), BackgroundTransparency = 0}):Play()
     TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageTransparency = 0.5}):Play()
 end
-local function ToggleMultiFling(state)
+ToggleMultiFling = function(state)
     Settings.MultiFlingEnabled = state
     if state then
         CreateAdvancedFlingGUI()
@@ -2839,7 +2841,7 @@ local function ToggleMultiFling(state)
         ForceCameraReset()
     end
 end
-local function ToggleAntiTouch(state)
+ToggleAntiTouch = function(state)
     Settings.AntiTouchEnabled = state
     if state then
         task.spawn(function()
@@ -3211,7 +3213,7 @@ local function SetupNoClip()
     end
 end
 local AntiScreenShakeConnection = nil
-local function ToggleAntiScreenShake(state)
+ToggleAntiScreenShake = function(state)
     Settings.AntiScreenShakeEnabled = state
     if state then
         if AntiScreenShakeConnection then AntiScreenShakeConnection:Disconnect() end
@@ -3242,7 +3244,7 @@ local function SetupInfiniteJump()
         end
     end
 end
-local function SpectatePlayer(targetName)
+SpectatePlayer = function(targetName)
     if not targetName or targetName == "None" then
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
@@ -3329,7 +3331,7 @@ local function IsObjectValid(obj)
     end
     return isPlayer ~= nil
 end
-local function ToggleZoomUnlocker(state)
+ToggleZoomUnlocker = function(state)
     Settings.ZoomUnlockerEnabled = state
     if state then
         LocalPlayer.CameraMaxZoomDistance = Settings.MaxZoomDistance
@@ -3570,7 +3572,7 @@ end
 local Target = nil
 local LastTarget = nil
 local TargetSwitchTick = 0
-function SetupAimbot()
+SetupAimbot = function()
     AimbotConnection = RegisterConnection(RunService.RenderStepped:Connect(function()
         AimbotFOVCircle.Radius = Settings.AimbotFOV
         AimbotFOVCircle.Visible = Settings.AimbotShowFOV and Settings.AimbotEnabled
@@ -4586,7 +4588,7 @@ local function IsObjectValid(obj)
     return isPlayer ~= nil
 end
 
-local function ToggleUniversalESP(state)
+ToggleUniversalESP = function(state)
     if state and not Settings.HackToolsMaster then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Hack Tools",
@@ -4727,18 +4729,19 @@ local function ToggleUniversalESP(state)
     end)
 end
 
-local function StartAutoFarm()
-    local trackingConnection = nil
+StartAutoFarm = function()
+    local farmActive = true
     local currentTarget = nil
+    local interactionRadius = 15 -- Parallel collection radius
 
     local function stopTracking()
-        if trackingConnection then trackingConnection:Disconnect(); trackingConnection = nil end
+        farmActive = false
         currentTarget = nil
         pcall(function()
             local char = LocalPlayer.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hrp then hrp.Anchored = false end
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hum then
                 hum.PlatformStand = false
                 hum:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -4746,43 +4749,118 @@ local function StartAutoFarm()
         end)
     end
 
+    -- [Position Locking Thread]
     task.spawn(function()
-        while true do
-            task.wait(0.5)
-            if not Settings.AutoFarmEnabled then continue end
-            if not Settings.HackToolsMaster then
-                Settings.AutoFarmEnabled = false
-                if UIElements.AutoFarmEnabled then UIElements.AutoFarmEnabled.Set(false) end
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Hack Tools",
-                    Text = "Auto Farm หยุด: Master System ปิดอยู่! 🛡️",
-                    Duration = 3
-                })
-                continue
+        local connection
+        connection = RunService.Heartbeat:Connect(function()
+            if not Settings.AutoFarmEnabled or not farmActive then
+                connection:Disconnect()
+                return
             end
 
-            local objects = {}
-            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if not hrp then task.wait(0.5); continue end
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
 
+            if hrp and currentTarget and IsObjectValid(currentTarget) then
+                local targetPart = GetTargetPart(currentTarget)
+                if targetPart then
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    
+                    if Settings.AutoFarmTargetMode == "Players" then
+                        hrp.CFrame = targetPart.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                    else
+                        local offset = currentTarget:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0, 0)
+                        hrp.CFrame = targetPart.CFrame + offset
+                    end
+                    
+                    hrp.Anchored = true
+                    if hum then
+                        hum.PlatformStand = true
+                        if hum:GetState() ~= Enum.HumanoidStateType.Physics then
+                            hum:ChangeState(Enum.HumanoidStateType.Physics)
+                        end
+                    end
+                end
+            elseif hrp then
+                hrp.Anchored = false
+            end
+        end)
+    end)
+
+    -- [Parallel Interaction Thread]
+    task.spawn(function()
+        while Settings.AutoFarmEnabled and farmActive do
+            task.wait(0.01) -- High frequency scanning
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp or not Settings.AutoFarmInteract then continue end
+
+            -- Scan radius for Parallel Collection
+            local nearby = {}
             if Settings.AutoFarmTargetMode == "Players" then
-                local targetedName = Settings.UniversalESPName:lower()
                 for _, p in pairs(Players:GetPlayers()) do
                     if p ~= LocalPlayer and p.Character then
-                        local targetPart = GetTargetPart(p.Character)
-                        if targetPart then
-                            local dist = (hrp.Position - targetPart.Position).Magnitude
-                            if dist <= Settings.UniversalESPDistance then
+                        local tp = GetTargetPart(p.Character)
+                        if tp and (hrp.Position - tp.Position).Magnitude <= interactionRadius then
+                            table.insert(nearby, p.Character)
+                        end
+                    end
+                end
+            else
+                for _, v in ipairs(UniversalTargets) do
+                    if IsObjectValid(v) then
+                        local tp = GetTargetPart(v)
+                        if tp and (hrp.Position - tp.Position).Magnitude <= interactionRadius then
+                            table.insert(nearby, v)
+                        end
+                    end
+                end
+            end
+
+            -- Fire Parallel Interactions
+            for _, obj in ipairs(nearby) do
+                local tp = GetTargetPart(obj)
+                if tp then
+                    firetouchinterest(hrp, tp, 0); firetouchinterest(hrp, tp, 1)
+                    for _, p in pairs(obj:GetDescendants()) do
+                        if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
+                    end
+                end
+            end
+            
+            -- Player Attack (if target mode is players)
+            if Settings.AutoFarmTargetMode == "Players" and #nearby > 0 then
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                task.wait(0.01)
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            end
+        end
+    end)
+
+    -- [Target Acquisition & Management Thread]
+    task.spawn(function()
+        while Settings.AutoFarmEnabled and farmActive do
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then task.wait(0.1); continue end
+
+            -- Find closest target
+            local bestTarget = nil
+            local minDist = math.huge
+            local searchTerm = Settings.UniversalESPName:lower()
+
+            if Settings.AutoFarmTargetMode == "Players" then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character then
+                        local tp = GetTargetPart(p.Character)
+                        if tp then
+                            local dist = (hrp.Position - tp.Position).Magnitude
+                            if dist < minDist and dist <= Settings.UniversalESPDistance then
                                 local isWhitelisted = false
-                                for _, name in pairs(Settings.WhitelistNames) do
-                                    if p.Name == name then isWhitelisted = true break end
-                                end
-                                if not isWhitelisted then
-                                    if targetedName == ""
-                                        or p.Name:lower():find(targetedName, 1, true)
-                                        or p.DisplayName:lower():find(targetedName, 1, true) then
-                                        table.insert(objects, p.Character)
-                                    end
+                                for _, name in pairs(Settings.WhitelistNames) do if p.Name == name then isWhitelisted = true break end end
+                                if not isWhitelisted and (searchTerm == "" or p.Name:lower():find(searchTerm, 1, true) or p.DisplayName:lower():find(searchTerm, 1, true)) then
+                                    minDist = dist; bestTarget = p.Character
                                 end
                             end
                         end
@@ -4790,98 +4868,41 @@ local function StartAutoFarm()
                 end
             else
                 if not Settings.UniversalESPEnabled then
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = "Auto Farm",
-                        Text = "กรุณาเปิด ESP (X-Ray) ก่อนใช้ Object Farm! 🔎",
-                        Duration = 3
-                    })
+                    game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Auto Farm", Text = "Please Enable ESP for Objects! 🔎", Duration = 2})
                     task.wait(2); continue
                 end
                 for _, v in ipairs(UniversalTargets) do
                     if IsObjectValid(v) then
-                        local targetPart = GetTargetPart(v)
-                        if targetPart then
-                            local dist = (hrp.Position - targetPart.Position).Magnitude
-                            if dist <= Settings.UniversalESPDistance then
-                                table.insert(objects, v)
+                        local tp = GetTargetPart(v)
+                        if tp then
+                            local dist = (hrp.Position - tp.Position).Magnitude
+                            if dist < minDist and dist <= Settings.UniversalESPDistance then
+                                minDist = dist; bestTarget = v
                             end
                         end
                     end
                 end
             end
 
-            if #objects > 0 then
-                table.sort(objects, function(a, b)
-                    local aPos = GetTargetPart(a).Position
-                    local bPos = GetTargetPart(b).Position
-                    return (hrp.Position - aPos).Magnitude < (hrp.Position - bPos).Magnitude
-                end)
-
-                for _, target in ipairs(objects) do
-                    if not Settings.AutoFarmEnabled then break end
-                    currentTarget = target
-                    if not trackingConnection then
-                        trackingConnection = RunService.Heartbeat:Connect(function()
-                            if not Settings.AutoFarmEnabled or not currentTarget or not IsObjectValid(currentTarget) then
-                                stopTracking(); return
-                            end
-                            local char = LocalPlayer.Character
-                            local hrp2 = char and char:FindFirstChild("HumanoidRootPart")
-                            local hum = char and char:FindFirstChildOfClass("Humanoid")
-                            local targetPart = GetTargetPart(currentTarget)
-                            if hrp2 and targetPart then
-                                hrp2.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                                hrp2.AssemblyAngularVelocity = Vector3.new(0,0,0)
-                                if Settings.AutoFarmTargetMode == "Players" then
-                                    local lookDown = targetPart.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0)
-                                    hrp2.CFrame = lookDown
-                                else
-                                    local offset = currentTarget:IsA("Model") and Vector3.new(0, -1, 0) or Vector3.new(0, 0, 0)
-                                    hrp2.CFrame = targetPart.CFrame + offset
-                                end
-                                hrp2.Anchored = true
-                                if hum then
-                                    hum.PlatformStand = true
-                                    if hum:GetState() ~= Enum.HumanoidStateType.Physics then
-                                        hum:ChangeState(Enum.HumanoidStateType.Physics)
-                                    end
-                                end
-                            end
-                        end)
-                    end
-
-                    local startTime = tick()
-                    local delay = math.max(0.01, Settings.AutoFarmDelay)
-                    while Settings.AutoFarmEnabled and currentTarget == target and IsObjectValid(target) and (tick() - startTime) < delay do
-                        if Settings.AutoFarmInteract then
-                            local targetPart = GetTargetPart(target)
-                            if targetPart then
-                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPart, 0)
-                                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, targetPart, 1)
-                                if Settings.AutoFarmTargetMode == "Players" then
-                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                                    task.wait(0.01)
-                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                                end
-                                for _, prompt in pairs(target:GetDescendants()) do
-                                    if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end
-                                end
-                            end
-                        end
-                        task.wait(0.1)
-                    end
-                    if not Settings.AutoFarmEnabled then break end
+            if bestTarget then
+                currentTarget = bestTarget
+                local startTime = tick()
+                local waitLimit = math.max(0.01, Settings.AutoFarmDelay)
+                
+                -- Stay on target until collected or timeout
+                while Settings.AutoFarmEnabled and farmActive and currentTarget == bestTarget and IsObjectValid(bestTarget) and (tick() - startTime) < waitLimit do
+                    task.wait()
                 end
             else
-                stopTracking()
-                task.wait(0.5)
+                currentTarget = nil
+                task.wait(0.1)
             end
         end
         stopTracking()
     end)
 end
 
-local function TeleportNextObject()
+TeleportNextObject = function()
     if not Settings.HackToolsMaster then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Hack Tools",
@@ -4930,23 +4951,20 @@ local function TeleportNextObject()
                 end
             end
         else
-            local count = 0
-            for _, v in pairs(workspace:GetDescendants()) do
-                local objName = v.Name:lower()
-                if (v:IsA("BasePart") or v:IsA("Model") or v:IsA("Folder") or v:IsA("Tool") or v:IsA("Accessory"))
-                    and objName:find(searchTerm, 1, true) then
+            if not Settings.UniversalESPEnabled then
+                game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Hack Tools", Text = "Please Enable ESP for Objects! 🔎", Duration = 2})
+                return
+            end
+            for _, v in ipairs(UniversalTargets) do
+                if IsObjectValid(v) then
                     local targetPart = GetTargetPart(v)
                     if targetPart then
                         local dist = (hrp.Position - targetPart.Position).Magnitude
                         if dist <= Settings.UniversalESPDistance then
-                            if not ShouldIgnoreObject(v, searchTerm) then
-                                table.insert(SequentialTPQueue, v)
-                            end
+                            table.insert(SequentialTPQueue, v)
                         end
                     end
                 end
-                count = count + 1
-                if count % 250 == 0 then task.wait() end
             end
         end
     end
@@ -4969,7 +4987,16 @@ local function TeleportNextObject()
                 local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
                 if hum then hum.PlatformStand = true; hum:ChangeState(Enum.HumanoidStateType.Physics) end
                 hrp.Anchored = true
-                task.delay(0.2, function()
+                
+                -- Fast Interaction on Teleport
+                if Settings.AutoFarmInteract then
+                    firetouchinterest(hrp, targetPosPart, 0); firetouchinterest(hrp, targetPosPart, 1)
+                    for _, p in pairs(targetResource:GetDescendants()) do
+                        if p:IsA("ProximityPrompt") then fireproximityprompt(p) end
+                    end
+                end
+
+                task.delay(0.1, function()
                     if hrp and hrp.Parent then hrp.Anchored = false end
                     if hum and hum.Parent then
                         hum.PlatformStand = false
