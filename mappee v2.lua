@@ -19,6 +19,7 @@ local function RegisterConnection(connection)
     return connection
 end
 Settings.AimbotAdaptiveAim = false
+Settings.AutoReExecute = false
 
 local OriginalLightingData = nil
 local function SaveOriginalLighting()
@@ -160,7 +161,7 @@ function RegisterConnection(conn)
     return conn
 end
 
-local ToggleFly, ToggleThotChit, ToggleSpinBot, RejoinServer, ServerHop, FindSmallServer, ToggleWalkOnWater, ToggleRemoveBlur, ToggleFPSBooster, ToggleFreecam, ToggleAntiAFK, ToggleFling, ToggleAntiFling, ToggleHitboxExpander, ToggleInstantInteract, ToggleClickToFling, ToggleUniversalESP, StartAutoFarm, TeleportNextObject, ToggleAntiTouch, ToggleMultiFling, ToggleAntiScreenShake, ToggleZoomUnlocker, SetupAimbot, SpectatePlayer, TeleportToLastDeath, ToggleMapCleaner
+local ToggleFly, ToggleThotChit, ToggleSpinBot, RejoinServer, ServerHop, FindSmallServer, ToggleWalkOnWater, ToggleRemoveBlur, ToggleFPSBooster, ToggleFreecam, ToggleAntiAFK, ToggleFling, ToggleAntiFling, ToggleHitboxExpander, ToggleInstantInteract, ToggleClickToFling, ToggleUniversalESP, StartAutoFarm, TeleportNextObject, ToggleAntiTouch, ToggleMultiFling, ToggleAntiScreenShake, ToggleZoomUnlocker, SetupAimbot, SpectatePlayer, TeleportToLastDeath, ToggleMapCleaner, ToggleAutoReExecute
 local TweenService = game:GetService("TweenService")
 
 local Config = {
@@ -1672,7 +1673,7 @@ ToggleThotChit = function(state)
         ThotChitPart.CFrame = hrp.CFrame
         ThotChitPart.Parent = workspace
         
-        hrp.CFrame = hrp.CFrame + Vector3.new(0, 1000, 0)
+        hrp.CFrame = hrp.CFrame + Vector3.new(0, 10000, 0)
         
         camera.CameraSubject = ThotChitPart
         
@@ -2224,6 +2225,25 @@ ToggleAntiAFK = function(state)
                 virtualUser:ClickButton2(Vector2.new())
             end
         end)
+    end
+end
+ToggleAutoReExecute = function(state)
+    Settings.AutoReExecute = state
+    if state and not getgenv().Diablo_AutoExec then
+        getgenv().Diablo_AutoExec = true
+        local TARGET_PLACE_ID = game.PlaceId
+        local scriptURL = "https://raw.githubusercontent.com/Diablo4925/to-fp-v2/refs/heads/main/mappee%20v2.lua"
+        local code = [[
+            if game.PlaceId ~= ]]..TARGET_PLACE_ID..[[ then return end
+
+            task.wait(3)
+            loadstring(game:HttpGet("]]..scriptURL..[["))()
+        ]]
+        if syn and syn.queue_on_teleport then
+            syn.queue_on_teleport(code)
+        elseif queue_on_teleport then
+            queue_on_teleport(code)
+        end
     end
 end
 ToggleFling = function(state)
@@ -3413,6 +3433,7 @@ local function LoadConfig()
                 ToggleClickToFling(Settings.ClickToFlingEnabled); task.wait(0.05)
                 ToggleSpinBot(Settings.SpinBotEnabled); task.wait(0.05)
                 RadarFrame.Visible = Settings.RadarEnabled; task.wait(0.05)
+                ToggleAutoReExecute(Settings.AutoReExecute); task.wait(0.05)
                 SetupAimbot()
             end)
             game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -4521,6 +4542,11 @@ UIElements.ToggleUIKey = SettingsTab:Keybind("Toggle UI Key 🔓", Settings.Togg
     Settings.ToggleUIKey = key
     SaveConfig(true)
 end)
+SettingsTab:Section("Persistence ♻️")
+UIElements.AutoReExecute = SettingsTab:Toggle("Auto-ReExecute (Server Hop) ♻️", Settings.AutoReExecute, function(state)
+    ToggleAutoReExecute(state)
+    SaveConfig(true)
+end)
 
 local UniversalESPConnection = nil
 local UniversalESPFolder = nil
@@ -5107,3 +5133,4 @@ function Library:Unload()
     print("Diablo Hub fully unloaded! 🧹🛡️")
 end
 return Library
+
