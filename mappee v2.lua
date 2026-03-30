@@ -4710,6 +4710,9 @@ end)
 SettingsTab:Button("Free GamePass", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Diablo4925/FreeGamePass/refs/heads/main/FreeGamePass.lua"))()
 end)
+SettingsTab:Button("AutoClicker", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Diablo4925/AutoClicker/refs/heads/main/AutoClicker.lua"))()
+end)
 SettingsTab:Section("Configuration 💾")
 SettingsTab:Button("Save Config 💾", function()
     SaveConfig()
@@ -5330,3 +5333,4 @@ function Library:Unload()
     print("Diablo Hub fully unloaded! 🧹🛡️")
 end
 return Library
+
